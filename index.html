@@ -1,0 +1,1395 @@
+<title>SHERPA Studio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: control-room console — app bar, numbered stage rail (a real sequence), work area with list | detail split. */
+:root{
+  --bg:#f3f5f4; --surface:#ffffff; --sunk:#e8ecea; --line:#cfd6d3; --line-strong:#9aa7a2;
+  --ink:#16201d; --ink-2:#4a5853; --ink-3:#6f7d78;
+  --accent:#0d5c63; --accent-ink:#ffffff; --accent-soft:#d7e9ea;
+  --signal:#b86e00; --signal-soft:#fbeed8;
+  --hi:#b42318; --hi-soft:#fde4e1; --med:#a15c00; --med-soft:#fdf0d5; --lo:#2f7d4f; --lo-soft:#dff1e5;
+  --focus:#1f7a8c;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:6px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#101615; --surface:#172020; --sunk:#0c1211; --line:#2c3836; --line-strong:#4d5d59;
+  --ink:#e4ebe8; --ink-2:#a8b6b1; --ink-3:#7f8e89;
+  --accent:#5fb6bd; --accent-ink:#061414; --accent-soft:#16383b;
+  --signal:#f0a640; --signal-soft:#3a2a10;
+  --hi:#ff8a7a; --hi-soft:#43201c; --med:#f2b55a; --med-soft:#3b2c12; --lo:#7fd39d; --lo-soft:#173323;
+  --focus:#7fd0d8; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#101615; --surface:#172020; --sunk:#0c1211; --line:#2c3836; --line-strong:#4d5d59;
+  --ink:#e4ebe8; --ink-2:#a8b6b1; --ink-3:#7f8e89;
+  --accent:#5fb6bd; --accent-ink:#061414; --accent-soft:#16383b;
+  --signal:#f0a640; --signal-soft:#3a2a10;
+  --hi:#ff8a7a; --hi-soft:#43201c; --med:#f2b55a; --med-soft:#3b2c12; --lo:#7fd39d; --lo-soft:#173323;
+  --focus:#7fd0d8; color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 var(--f-body);margin:0}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;letter-spacing:.01em;text-wrap:balance;margin:0}
+h2{font-size:22px} h3{font-size:17px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--ink-2)} .faint{color:var(--ink-3)}
+.small{font-size:12.5px}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+#root{min-height:100%;display:flex;flex-direction:column}
+
+/* App bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.bar-in{display:flex;align-items:center;gap:12px;padding-block:8px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:8px;font-family:var(--f-display);font-weight:700;font-size:19px;letter-spacing:.02em}
+.brand small{font-family:var(--f-body);font-weight:500;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.study-name{min-width:0;flex:1 1 220px;display:flex;align-items:center;gap:8px}
+.study-name span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.save-state{font-size:12px;color:var(--ink-3);white-space:nowrap}
+.bar-actions{display:flex;gap:6px;flex-wrap:wrap}
+
+/* Stage rail */
+.rail{background:var(--surface);border-bottom:1px solid var(--line);overflow-x:auto}
+.rail-in{display:flex;gap:2px;padding-block:0}
+.stage{appearance:none;border:0;background:none;padding:10px 12px 9px;display:flex;align-items:center;gap:8px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;color:var(--ink-2)}
+.stage:hover{color:var(--ink)}
+.stage[aria-current="step"]{color:var(--ink);border-bottom-color:var(--accent)}
+.stage .num{font-family:var(--f-mono);font-size:11.5px;width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;border:1px solid var(--line-strong)}
+.stage[aria-current="step"] .num{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.stage .lbl{font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.02em}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--line-strong)}
+.dot.ok{background:var(--lo)} .dot.warn{background:var(--signal)}
+
+/* Main */
+main{flex:1;padding-block:18px 40px}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+.page-head p{margin:4px 0 0;max-width:70ch;color:var(--ink-2)}
+.eyebrow{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.split{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start}
+.split.wide-left{grid-template-columns:minmax(0,1.6fr) minmax(320px,1fr)}
+.split.list-left{grid-template-columns:minmax(260px,.8fr) minmax(0,2fr)}
+@media (max-width:900px){.split,.split.wide-left,.split.list-left{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);min-width:0}
+.panel-h{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.panel-h h3{font-size:16px}
+.panel-b{padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.sticky{position:sticky;top:calc(env(safe-area-inset-top,0px) + 110px)}
+@media (max-width:900px){.sticky{position:static}}
+
+/* Controls */
+.btn{appearance:none;border:1px solid var(--line-strong);background:var(--surface);border-radius:var(--r);padding:6px 11px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-weight:500;font-size:13px;white-space:nowrap}
+.btn:hover{border-color:var(--ink-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:var(--sunk)}
+.btn.danger{color:var(--hi);border-color:color-mix(in srgb,var(--hi) 45%,var(--line))}
+.btn.sm{padding:3px 8px;font-size:12px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.grow{flex:1 1 auto;min-width:0}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:var(--ink-2);min-width:0}
+label.f > span.hint{font-weight:400;color:var(--ink-3)}
+input[type=text],input[type=date],input[type=time],input[type=number],select,textarea{background:var(--surface);border:1px solid var(--line-strong);border-radius:5px;padding:6px 8px;font-size:13.5px;width:100%;min-width:0;font-weight:400;color:var(--ink)}
+textarea{resize:vertical;min-height:58px;line-height:1.4}
+input:focus,select:focus,textarea:focus{border-color:var(--focus);outline:none;box-shadow:0 0 0 2px color-mix(in srgb,var(--focus) 25%,transparent)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:640px){.grid2,.grid3{grid-template-columns:minmax(0,1fr)}}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{appearance:none;border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:3px 10px;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}
+.swatch{width:10px;height:10px;border-radius:3px;display:inline-block;flex:none}
+.seg{align-self:flex-start;display:inline-flex;border:1px solid var(--line-strong);border-radius:6px;overflow:hidden;flex-wrap:wrap}
+.seg button{appearance:none;border:0;border-right:1px solid var(--line);background:var(--surface);padding:5px 10px;cursor:pointer;font-size:12.5px}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.seg.risk button[data-v="3"][aria-pressed="true"]{background:var(--hi);color:#fff}
+.seg.risk button[data-v="2"][aria-pressed="true"]{background:var(--med);color:#fff}
+.seg.risk button[data-v="1"][aria-pressed="true"]{background:var(--lo);color:#fff}
+
+/* Pills & badges */
+.pill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:1px 8px;font-size:11.5px;font-weight:600;letter-spacing:.02em;white-space:nowrap;border:1px solid transparent}
+.pill.hi{background:var(--hi-soft);color:var(--hi);border-color:color-mix(in srgb,var(--hi) 35%,transparent)}
+.pill.med{background:var(--med-soft);color:var(--med);border-color:color-mix(in srgb,var(--med) 35%,transparent)}
+.pill.lo{background:var(--lo-soft);color:var(--lo);border-color:color-mix(in srgb,var(--lo) 35%,transparent)}
+.pill.none{background:var(--sunk);color:var(--ink-3)}
+.pill.acc{background:var(--accent-soft);color:var(--accent)}
+.pill.sig{background:var(--signal-soft);color:var(--signal)}
+.code{font-family:var(--f-mono);font-size:12px;font-weight:500;background:var(--sunk);border-radius:4px;padding:0 5px}
+
+/* Outline editor */
+.outline{display:flex;flex-direction:column}
+.ol-row{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;align-items:center;gap:6px;padding:3px 8px 3px 0;border-bottom:1px solid var(--line)}
+.ol-row.sel{background:var(--accent-soft)}
+.ol-row .num{font-family:var(--f-mono);font-size:12px;color:var(--ink-2);min-width:38px;text-align:right}
+.ol-row input{border:1px solid transparent;background:transparent;padding:4px 6px}
+.ol-row input:hover{border-color:var(--line)}
+.ol-row .meta{display:flex;gap:4px;align-items:center}
+.tw{appearance:none;border:0;background:none;width:18px;height:18px;cursor:pointer;color:var(--ink-3);padding:0;font-size:11px}
+.toolbar{display:flex;gap:4px;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--sunk)}
+
+/* Diagram */
+.diagram-wrap{overflow:auto;max-height:70vh;background:var(--sunk);border-radius:0 0 var(--r) var(--r)}
+.diagram-wrap svg{display:block}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--ink-2)}
+
+/* Tables */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table.tbl{border-collapse:collapse;width:100%;font-size:13px}
+.tbl th{position:sticky;top:0;background:var(--sunk);text-align:left;font-weight:600;font-size:12px;color:var(--ink-2);padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl tr:last-child td{border-bottom:0}
+.tbl td.num,.tbl th.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.tbl textarea,.tbl input,.tbl select{font-size:12.5px;padding:4px 6px}
+.tbl textarea{min-height:44px}
+.tbl tr.clickable{cursor:pointer}
+.tbl tr.clickable:hover td{background:color-mix(in srgb,var(--accent-soft) 45%,transparent)}
+.tbl tr.sel td{background:var(--accent-soft)}
+
+/* Lists (step pickers) */
+.list{display:flex;flex-direction:column;max-height:70vh;overflow:auto}
+.li{appearance:none;text-align:left;border:0;border-bottom:1px solid var(--line);background:none;padding:8px 12px;cursor:pointer;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:start}
+.li:hover{background:var(--sunk)}
+.li[aria-current="true"]{background:var(--accent-soft)}
+.li .n{font-family:var(--f-mono);font-size:12px;color:var(--ink-2);padding-top:1px}
+
+/* Cards */
+.card{border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--surface)}
+.card.flag{border-left:4px solid var(--signal)}
+.card-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.notice{border:1px solid color-mix(in srgb,var(--signal) 40%,var(--line));background:var(--signal-soft);border-radius:var(--r);padding:10px 12px;font-size:13px}
+.notice.info{border-color:color-mix(in srgb,var(--accent) 35%,var(--line));background:var(--accent-soft)}
+.gate{display:flex;flex-direction:column;gap:6px}
+.gate ul{margin:0;padding-left:18px}
+.gate li{margin:2px 0}
+.empty{padding:28px;text-align:center;color:var(--ink-2)}
+.kpis{display:flex;gap:10px;flex-wrap:wrap}
+.kpi{border:1px solid var(--line);border-radius:var(--r);padding:8px 12px;background:var(--surface);min-width:110px}
+.kpi b{display:block;font-family:var(--f-display);font-size:24px;line-height:1.1}
+.kpi span{font-size:12px;color:var(--ink-2)}
+
+/* Rating scale */
+.scale{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.scale button{appearance:none;border:1px solid var(--line-strong);background:var(--surface);border-radius:5px;padding:5px 4px;cursor:pointer;font-size:11.5px;line-height:1.2;text-align:center}
+.scale button b{display:block;font-family:var(--f-mono);font-size:12.5px}
+.scale button[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.scale button[data-v="100"][aria-pressed="true"]{background:var(--hi-soft)}
+.scale button[data-v="75"][aria-pressed="true"]{background:var(--med-soft)}
+.scale button[data-v="50"][aria-pressed="true"]{background:var(--sunk)}
+.scale button[data-v="25"][aria-pressed="true"],.scale button[data-v="0"][aria-pressed="true"]{background:var(--lo-soft)}
+@media (max-width:640px){.scale{grid-template-columns:repeat(5,minmax(52px,1fr));overflow-x:auto}}
+.meter{height:8px;border-radius:4px;background:var(--sunk);position:relative;overflow:hidden;min-width:80px}
+.meter i{position:absolute;inset:0 auto 0 0;border-radius:4px}
+
+/* Drawer & modal */
+.scrim{position:fixed;inset:0;background:rgba(10,20,18,.45);z-index:50;display:flex;justify-content:flex-end}
+.drawer{background:var(--surface);width:min(520px,100%);height:100%;overflow:auto;padding:18px max(18px,env(safe-area-inset-right,0px)) 30px 18px;display:flex;flex-direction:column;gap:12px}
+.modal-scrim{position:fixed;inset:0;background:rgba(10,20,18,.45);z-index:60;display:grid;place-items:center;padding:16px}
+.modal{background:var(--surface);border-radius:8px;max-width:520px;width:100%;padding:18px;display:flex;flex-direction:column;gap:12px;border:1px solid var(--line)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:6px;z-index:70;font-size:13px;max-width:90vw}
+dl.gloss{margin:0;display:flex;flex-direction:column;gap:10px}
+dl.gloss dt{font-weight:600;font-family:var(--f-display);font-size:15.5px}
+dl.gloss dd{margin:2px 0 0;color:var(--ink-2)}
+
+/* Procedure preview (document look) */
+.doc{background:#fff;color:#1a1a1a;border:1px solid var(--line);border-radius:4px;padding:28px;font-family:var(--f-body);max-width:860px}
+.doc h1{font-family:var(--f-display);font-size:24px;color:#0d3b40}
+.doc h2{font-family:var(--f-display);font-size:17px;margin:18px 0 6px;color:#0d3b40}
+.doc .hdr{display:grid;grid-template-columns:1fr auto;gap:8px;border:1px solid #9aa;padding:8px 10px;font-size:12.5px;margin-bottom:12px}
+.doc table{border-collapse:collapse;width:100%;font-size:12.5px}
+.doc th,.doc td{border:1px solid #9aa;padding:5px 7px;vertical-align:top;text-align:left}
+.doc th{background:#e3ecec}
+.doc tr.crit td{background:#fdecea}
+.doc .warn{color:#9b1c10;font-weight:600}
+.doc img{max-width:180px;display:block;margin-top:4px;border:1px solid #ccc}
+.doc .box{border:1px solid #9aa;padding:8px 10px;margin-bottom:10px;font-size:13px;white-space:pre-wrap}
+@media (max-width:640px){.doc{padding:14px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.hide-sm{} @media (max-width:640px){.hide-sm{display:none}}
+</style>
+<div id="root"><div class="wrap" style="padding-block:40px"><p>Loading SHERPA Studio…</p></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.umd.js"></script>
+<script>
+/* ===================== Reference libraries ===================== */
+const ACTIVITY_TYPES = [
+  {code:'ACT', name:'Action', desc:'Operating, connecting, opening, closing, adjusting equipment'},
+  {code:'CH',  name:'Checking', desc:'Confirming a state, condition or result before or after an action'},
+  {code:'MON', name:'Monitoring', desc:'Watching a process or value over time and reacting to change'},
+  {code:'COM', name:'Communication', desc:'Passing or receiving information between people'},
+  {code:'RET', name:'Retrieval', desc:'Obtaining information from a document, display or person'},
+  {code:'SEL', name:'Selection', desc:'Choosing one option, item or route among several'}
+];
+const ERROR_MODES = [
+  {code:'ACT1',a:'ACT',name:'Action omitted',q:'What if this step is not done at all?',demo:false},
+  {code:'ACT2',a:'ACT',name:'Action incomplete',q:'What if the step is started but not finished?',demo:false},
+  {code:'ACT3',a:'ACT',name:'Action too long / too short',q:'What if it is held or run for the wrong duration?',demo:false},
+  {code:'ACT4',a:'ACT',name:'Action mistimed (too early / too late)',q:'What if it is done out of sequence or at the wrong time?',demo:false},
+  {code:'ACT5',a:'ACT',name:'Action in wrong direction',q:'What if the valve, switch or control is moved the wrong way?',demo:false},
+  {code:'ACT6',a:'ACT',name:'Action too little / too much',q:'What if too little or too much force, quantity or adjustment is applied?',demo:false},
+  {code:'ACT7',a:'ACT',name:'Right action on wrong object',q:'What if the correct action is done on a similar, nearby item?',demo:true},
+  {code:'ACT8',a:'ACT',name:'Wrong action on right object',q:'What if the right item gets the wrong action?',demo:false},
+  {code:'ACT9',a:'ACT',name:'Misalignment',q:'What if parts are connected or positioned out of line?',demo:false},
+  {code:'ACT10',a:'ACT',name:'Wrong action on wrong object',q:'What if both the action and the item are wrong?',demo:false},
+  {code:'CH1',a:'CH',name:'Check omitted',q:'What if the check is skipped?',demo:true},
+  {code:'CH2',a:'CH',name:'Check incomplete',q:'What if the check is only partly done or not thorough?',demo:true},
+  {code:'CH3',a:'CH',name:'Wrong object or action checked',q:'What if the wrong item, gauge or light is checked?',demo:true},
+  {code:'CH4',a:'CH',name:'Wrong check',q:'What if the right item is checked in the wrong way or against the wrong value?',demo:true},
+  {code:'CH5',a:'CH',name:'Check too late / early',q:'What if the check happens before or after the moment it matters?',demo:true},
+  {code:'MON1',a:'MON',name:'Monitoring omitted',q:'What if no one watches the process?',demo:true},
+  {code:'MON2',a:'MON',name:'Wrong person or process monitored',q:'What if attention is on the wrong unit, tank or person?',demo:true},
+  {code:'MON3',a:'MON',name:'Monitoring incomplete or interrupted (e.g. following a shift change)',q:'What if monitoring stops part way, for example at a handover?',demo:true},
+  {code:'MON4',a:'MON',name:'Incorrect values monitored',q:'What if the wrong parameter or limit is watched?',demo:true},
+  {code:'COM1',a:'COM',name:'Information not communicated',q:'What if the message is never passed on?',demo:false},
+  {code:'COM2',a:'COM',name:'Wrong information communicated',q:'What if the wrong value, item or instruction is passed on?',demo:false},
+  {code:'COM3',a:'COM',name:'Information communication incomplete',q:'What if only part of the message gets through?',demo:false},
+  {code:'RET1',a:'RET',name:'Information not obtained',q:'What if the person never gets the information they need?',demo:false},
+  {code:'RET2',a:'RET',name:'Wrong information obtained',q:'What if they read the wrong line, display or document?',demo:false},
+  {code:'RET3',a:'RET',name:'Information retrieval incomplete',q:'What if they get only part of what they need?',demo:false},
+  {code:'SEL1',a:'SEL',name:'Selection omitted',q:'What if no selection is made and a default is used?',demo:false},
+  {code:'SEL2',a:'SEL',name:'Wrong selection made',q:'What if the wrong option, tank or route is chosen?',demo:false}
+];
+const ERROR_TYPES = [
+  {v:'Slip', d:'Right intention, wrong execution (e.g. the hand goes to the wrong switch).'},
+  {v:'Lapse', d:'A step forgotten or lost from memory (e.g. distracted and never returned to it).'},
+  {v:'Mistake', d:'A wrong plan or decision, done as intended (e.g. misjudging what the reading means).'},
+  {v:'Non-compliance', d:'A deliberate departure from the rule, usually for a reason worth finding.'}
+];
+const CONSEQUENCE_TYPES = ['Possible MAH','No MAH identified','Possible MAH (2nd order)','Process safety','Personal safety','Environmental','Equipment damage','Efficiency / commercial','Financial','Reputational','Security'];
+const SEVERE_TYPES = ['Possible MAH','Possible MAH (2nd order)','Process safety'];
+const RATING = [
+  {v:100,l:'Strongly agree',h:'Worst case'},
+  {v:75,l:'Agree',h:'Less than industry norm'},
+  {v:50,l:'Neither',h:'Industry norm'},
+  {v:25,l:'Disagree',h:'Good, less than optimal'},
+  {v:0,l:'Strongly disagree',h:'Best case'}
+];
+const CONTROL_LEVELS = [
+  {k:'ELIM',name:'Eliminate or substitute',rank:1},
+  {k:'ENG',name:'Engineering',rank:2},
+  {k:'HMI',name:'Interface design',rank:3},
+  {k:'ENV',name:'Environment',rank:4},
+  {k:'PROC',name:'Procedure',rank:5},
+  {k:'TRN',name:'Training and competence',rank:6},
+  {k:'SUP',name:'Supervision',rank:7},
+  {k:'PPE',name:'PPE',rank:8}
+];
+const LEVEL = Object.fromEntries(CONTROL_LEVELS.map(l=>[l.k,l]));
+const ALL = ['ACT','CH','MON','COM','RET','SEL'];
+const PIFS = [
+  {id:'redundancy',name:'Perceived redundancy',st:'The operator believes another check or system will catch any error',a:['CH','MON'],cat:'Individual',g:'When people think another check, alarm or colleague will catch a problem, their own check becomes less careful. Ask the team whether they trust a later check or an alarm to cover this step.',
+   c:[['ENG','Make the step a hard prerequisite (interlock or permissive) so it cannot be bypassed'],['PROC','State in the procedure why this check is not duplicated elsewhere'],['TRN','Show in training where this check is the last line of defence']]},
+  {id:'importance',name:'Perceived importance of check relative to other tasks',st:'The check is seen as less important than other work going on at the same time',a:['CH','MON'],cat:'Individual',g:'Checks that look routine lose out to tasks that look urgent. Look for competing demands at the moment the check is due.',
+   c:[['PROC','Mark the step as critical in the procedure and checklist'],['SUP','Supervisor verifies the check at the hold point'],['TRN','Explain the consequence of skipping the check with a real incident example']]},
+  {id:'time',name:'Time pressure',st:'There is not enough time to complete the step properly',a:ALL,cat:'Task',g:'Time pressure comes from schedules, queues of tankers, production targets or end-of-shift timing. Ask when the task is usually done and what else is waiting.',
+   c:[['ELIM','Remove the schedule driver (book deliveries so the step is not done at shift end)'],['PROC','Add a hold point: do not proceed until the step is confirmed'],['SUP','Give supervisors authority to delay the task without penalty']]},
+  {id:'distraction',name:'Distractions',st:'The operator is frequently interrupted during the step',a:ALL,cat:'Environment',g:'Radio calls, phone calls and other people at the work point break concentration and cause lapses, especially in multi-step sequences.',
+   c:[['ENV','Define a no-interruption zone or time during the step'],['PROC','Add a place-keeping checklist so an interrupted step can be resumed correctly'],['HMI','Provide a clear status display so the operator can see where they are in the sequence']]},
+  {id:'fatigue',name:'Fatigue',st:'Fatigue levels are very high',a:ALL,cat:'Individual',g:'High levels of fatigue affect concentration and attention to detail. This could influence the effectiveness of the checking process. Consider shift length, night work and overtime.',
+   c:[['ELIM','Schedule the task away from night hours where operations allow'],['SUP','Apply a fatigue risk management rule (hours limits, rest breaks) for this task'],['PROC','Add an independent second check when the task runs at night']]},
+  {id:'staffing',name:'Staffing levels',st:'Staffing is below what the task needs',a:ALL,cat:'Organisation',g:'If one person covers several tasks or locations, steps are dropped. Compare the staffing assumed by the procedure with the real roster.',
+   c:[['SUP','Set a minimum manning level for the task and stop work below it'],['PROC','Assign the step to a named role in the procedure']]},
+  {id:'workload',name:'Workload',st:'Workload is excessive',a:ALL,cat:'Task',g:'High workload means the operator has to share attention between this task and others. Look at what else the person is responsible for during the task.',
+   c:[['ELIM','Move non-essential duties away from the operator during the task'],['ENG','Automate the monitoring with an alarm so the operator is not relied on alone'],['SUP','Add a second person for the critical part of the task']]},
+  {id:'instruction',name:'Quality of instruction / information',st:'Instructions are unclear, incomplete or out of date',a:ALL,cat:'Task',g:'Compare work as imagined with work as done: steps missing from the procedure, merged steps and vague wording all point to poor instructions.',
+   c:[['PROC','Rewrite the step as one action per line with the reason and the limit stated'],['PROC','Add a photo or diagram of the item at the step'],['TRN','Walk through the revised procedure with the crew']]},
+  {id:'training',name:'Training and competence',st:'The operator does not understand the requirement for the check',a:ALL,cat:'Individual',g:'If the operator has not been trained to understand the importance of the check (does not know why it is carried out), there is potential for it to be overlooked. Operators should understand why a task is carried out in a particular way, with reference to the hazards and safeguards.',
+   c:[['TRN','Add the reason for the step and its hazard to training and the competence standard'],['TRN','Assess competence on this step by observation (show me), not by questioning only'],['PROC','State the reason for the step in the procedure itself']]},
+  {id:'equipment',name:'Equipment location / accessibility',st:'The equipment is hard to reach, see or operate',a:['ACT','CH','MON'],cat:'Equipment',g:'Valves at height, gauges behind pipework and controls far from the work point invite shortcuts.',
+   c:[['ENG','Relocate or add a local indicator at the work point'],['ENV','Provide permanent safe access (platform, step)'],['HMI','Orient gauges so they can be read from the operating position']]},
+  {id:'complexity',name:'Task complexity',st:'The task is highly complex',a:ALL,cat:'Task',g:'If the task is complex, involving multiple different activities in different locations, or a high degree of cognitive effort, it is possible that the correct timing of the check is not followed.',
+   c:[['ELIM','Simplify the task (fewer valves, fewer locations)'],['PROC','Break the task into short numbered steps with a checklist'],['HMI','Provide a mimic or sequence display']]},
+  {id:'roles',name:'Roles and responsibilities',st:'It is unclear who performs or confirms the step',a:ALL,cat:'Organisation',g:'Shared steps (driver and operator, operator and control room) are often done by neither. Check that each step has one named role.',
+   c:[['PROC','Name one role per step in the procedure (Role column)'],['PROC','Add call-and-respond confirmation between the two roles'],['SUP','Supervisor confirms role allocation at the pre-task briefing']]},
+  {id:'omission',name:'Barriers to prevent omission',st:'The barriers to prevent the check being missed or done at the wrong time are not effective',a:['CH','MON','ACT'],cat:'Equipment',g:'Barriers that stop a step being skipped include interlocks, permissives, checklists with sign-off and alarms. Ask what stops the next step starting if this one is missed.',
+   c:[['ENG','Add an interlock or permissive that requires the step before the next can start'],['ENG','Add an alarm that warns when the expected condition is not met'],['PROC','Add a sign-off on the checklist at this step']]},
+  {id:'labelling',name:'Labelling',st:'Labelling of the equipment is absent or poor',a:['ACT','CH','SEL','RET'],cat:'Equipment',g:'Unlabelled or worn labels on valves, connection points and lights lead to right action on the wrong object.',
+   c:[['HMI','Fit durable labels at the point of use, with colour coding by product'],['ENG','Use physically different couplings for each product so the wrong connection cannot be made'],['PROC','Add a label check to the procedure step']]},
+  {id:'similarity',name:'Similarity and proximity',st:'The equipment is similar in function and in close proximity to other equipment',a:['ACT','CH','SEL','MON'],cat:'Equipment',g:'Identical items side by side (fill points, valves, status lights) are easily confused.',
+   c:[['ENG','Separate the items physically or lock out the ones not in use'],['HMI','Group related indicators together and away from other systems'],['PROC','Require point-and-call identification before acting']]},
+  {id:'environment',name:'Working environment',st:'Lighting, weather, noise or heat hinder the step',a:ALL,cat:'Environment',g:'Night work, poor lighting, rain and noise reduce the ability to see leaks, read gauges or hear radio calls.',
+   c:[['ENV','Improve lighting at the work point'],['ENV','Provide shelter or a local enclosure for the work point'],['PPE','Provide hearing protection with radio communication']]},
+  {id:'feedback',name:'Feedback from the system',st:'The system gives no clear feedback that the step was done correctly',a:['ACT','MON','CH'],cat:'Equipment',g:'Without a clear signal (green light, flow indication, level change) errors are not noticed until later.',
+   c:[['ENG','Add a positive indication (light, flow switch) that confirms the step'],['HMI','Make the indication visible from the operating position']]},
+  {id:'communication',name:'Communication',st:'Communication between the people involved is unreliable',a:['COM','ACT','MON'],cat:'Organisation',g:'Radios that do not work, language differences and unclear call signs all weaken communication between roles.',
+   c:[['ENG','Test radios before the task (already a procedure step) and provide a backup'],['PROC','Use a standard phrase and read-back for critical messages'],['TRN','Train both parties in the communication protocol']]}
+];
+PIFS.forEach(p=>{ p.c = p.c.filter(x=>Array.isArray(x)&&x.length===2); });
+const PIF = Object.fromEntries(PIFS.map(p=>[p.id,p]));
+
+const GLOSSARY = [
+  ['SHERPA','Systematic Human Error Reduction and Prediction Approach (Embrey, 1986). A structured way to find how each step of a task could fail, why, and what would make correct performance easier.'],
+  ['SCTA','Safety Critical Task Analysis. A SHERPA study is one way to carry out an SCTA.'],
+  ['Work as imagined (WAI)','The task as written in the procedure, or as managers and designers assume it is done.'],
+  ['Work as done (WAD)','The task as operators actually perform it, captured by walking and talking it through with them.'],
+  ['Task map / HTA','Hierarchical Task Analysis. The goal at the top, tasks and subtasks below, numbered 1, 1.1, 1.1.1.'],
+  ['Task box','One step in the task map.'],
+  ['Goal','The overall purpose at the top of the map, for example "Offload from road tanker".'],
+  ['Preconditions','What must be true before the task starts: equipment, personnel, plant state.'],
+  ['Plan','The rule that says how subtasks are performed: do in sequence, in any order, in parallel, or a conditional rule such as "Do 1–3. If the earth bonding system fails do 4".'],
+  ['Agent/Person (A/P)','The role that performs a step, for example Tanker Driver (TD) or Operator (Op).'],
+  ['Activity type','The kind of behaviour in a step: action, checking, monitoring, communication, retrieval or selection. It decides which error modes are offered.'],
+  ['Error mode','A specific way a step can fail, coded by activity: CH1 Check omitted, MON3 Monitoring interrupted, ACT7 Right action on wrong object. Also called failure mode.'],
+  ['Error type','Slip, lapse, mistake or non-compliance.'],
+  ['PIF','Performance Influencing Factor: a condition that makes an error more or less likely, such as fatigue, time pressure or labelling. Similar to PSF in other methods.'],
+  ['PIF statement','A PIF written as an adverse condition, for example "Fatigue levels are very high". The team agrees or disagrees with it, so agreeing means a worse condition.'],
+  ['PIF rating','0 to 100 from the five-point scale: 100 strongly agree (worst case), 75 agree, 50 industry norm, 25 disagree, 0 strongly disagree (best case).'],
+  ['Baseline / Modified','PIF ratings today, and the ratings expected once the agreed improvements are in place.'],
+  ['Error-mode score','The weighted mean of the PIF ratings for one error mode. A ranking aid for where to act first, not an error probability.'],
+  ['Recovery','An action or system that lets an error be noticed and corrected before harm.'],
+  ['Hierarchy of controls (HoC)','Order of control strength used for improvements: eliminate or substitute, engineering, interface design, environment, procedure, training and competence, supervision, PPE.'],
+  ['MAH','Major Accident Hazard. "Possible MAH" is a consequence type.'],
+  ['LoC','Loss of containment.'],
+  ['Critical deviation','A deviation at a step with a serious consequence, flagged for procedure emphasis and competence assessment.'],
+  ['KSE','Knowledge, Skill, Experience: the competence requirements written for a critical step.'],
+  ['HEP','Human Error Probability. A quantitative layer not included in this version.']
+];
+
+const STAGES = [
+  {k:'setup',n:1,l:'Set up'},
+  {k:'map',n:2,l:'Task map'},
+  {k:'compare',n:3,l:'Compare'},
+  {k:'screen',n:4,l:'Screen'},
+  {k:'errors',n:5,l:'Errors'},
+  {k:'pifs',n:6,l:'PIFs'},
+  {k:'controls',n:7,l:'Controls'},
+  {k:'outputs',n:8,l:'Outputs'},
+  {k:'grid',n:9,l:'Grid'}
+];
+const STUDY_TYPES = ['SCTA','Procedure review','Design review','Incident investigation'];
+const PLAN_TYPES = [
+  {v:'seq',l:'Do in sequence'},{v:'any',l:'Do in any order'},{v:'par',l:'Do in parallel'},{v:'cond',l:'Conditional'}
+];
+const PALETTE = ['#e07a6f','#e9b44c','#6cc3d5','#8f7fd6','#7cc68a','#d98cc8','#c9a06b','#7aa6e0'];
+
+/* ===================== Model helpers ===================== */
+const uid = (p='n') => p + Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-3);
+const clone = o => (typeof structuredClone === 'function' ? structuredClone(o) : JSON.parse(JSON.stringify(o)));
+const today = () => new Date().toISOString().slice(0,10);
+
+function newNode(label='', extra={}){
+  return Object.assign({id:uid('n'),label,children:[],parent:null,ref:'',agents:[],where:'',start:'',finish:'',activity:'',
+    warnings:'',comments:'',tags:'',risk:0,riskReason:'',plan:{type:'seq',text:''},critical:false,photos:[],link:null},extra);
+}
+function newMap(goal=''){
+  const root = newNode(goal||'Insert overall task goal',{type:'goal'});
+  return {rootId:root.id,nodes:{[root.id]:root},source:'',capturedOn:''};
+}
+function newStudy(title='Untitled study'){
+  return {id:uid('s'),schema:1,created:new Date().toISOString(),updated:new Date().toISOString(),
+    meta:{title,goal:'',site:'',facility:'',studyType:'SCTA',revision:'A',date:today(),owner:'',team:'',interviewees:'',preconditions:'',notes:'',ratingMode:'simple',isExample:false},
+    agents:[],locations:[],
+    maps:{wai:newMap(),wad:newMap()},
+    gaps:{},analyses:[],competence:{},gateNotes:{},audit:[]};
+}
+function addChild(map,parentId,label='',idx=null,extra={}){
+  const n = newNode(label,extra); n.parent=parentId; map.nodes[n.id]=n;
+  const p = map.nodes[parentId]; if(idx==null||idx>p.children.length) p.children.push(n.id); else p.children.splice(idx,0,n.id);
+  return n;
+}
+function removeNode(map,id){
+  const n = map.nodes[id]; if(!n||id===map.rootId) return;
+  const kill = x => { (map.nodes[x]?.children||[]).forEach(kill); delete map.nodes[x]; };
+  const p = map.nodes[n.parent]; if(p) p.children = p.children.filter(c=>c!==id);
+  kill(id);
+}
+function walk(map,fn){
+  const go=(id,depth)=>{ const n=map.nodes[id]; if(!n) return; fn(n,depth); n.children.forEach(c=>go(c,depth+1)); };
+  go(map.rootId,0);
+}
+function numbering(map){
+  const out={}; const go=(id,prefix)=>{ const n=map.nodes[id]; if(!n) return; n.children.forEach((c,i)=>{ const num = prefix?prefix+'.'+(i+1):String(i+1); out[c]=num; go(c,num); }); };
+  out[map.rootId]='0'; go(map.rootId,''); return out;
+}
+function ordered(map){ const a=[]; walk(map,(n,d)=>{ if(n.id!==map.rootId) a.push({n,d}); }); return a; }
+function leavesOf(map){ return ordered(map).filter(x=>x.n.children.length===0).map(x=>x.n); }
+function indentNode(map,id){
+  const n=map.nodes[id]; const p=map.nodes[n.parent]; const i=p.children.indexOf(id); if(i<=0) return false;
+  const prev=map.nodes[p.children[i-1]]; p.children.splice(i,1); prev.children.push(id); n.parent=prev.id; return true;
+}
+function outdentNode(map,id){
+  const n=map.nodes[id]; const p=map.nodes[n.parent]; if(!p||p.id===map.rootId) return false;
+  const gp=map.nodes[p.parent]; p.children=p.children.filter(c=>c!==id); const pi=gp.children.indexOf(p.id); gp.children.splice(pi+1,0,id); n.parent=gp.id; return true;
+}
+function moveNode(map,id,dir){
+  const n=map.nodes[id]; const p=map.nodes[n.parent]; if(!p) return; const i=p.children.indexOf(id); const j=i+dir; if(j<0||j>=p.children.length) return;
+  p.children.splice(i,1); p.children.splice(j,0,id);
+}
+function copyMapWithLinks(src){
+  const m={rootId:null,nodes:{},source:src.source,capturedOn:today()};
+  const go=(id,parent)=>{ const s=src.nodes[id]; const n=clone(s); n.id=uid('n'); n.parent=parent; n.children=[]; n.link=s.id; n.risk=0; n.riskReason='';
+    m.nodes[n.id]=n; if(parent) m.nodes[parent].children.push(n.id); else m.rootId=n.id; s.children.forEach(c=>go(c,n.id)); };
+  go(src.rootId,null); return m;
+}
+const agentLabel = (st,ids) => (ids||[]).map(i=>st.agents.find(a=>a.id===i)?.abbr||'').filter(Boolean).join(' / ');
+const agentNames = (st,ids) => (ids||[]).map(i=>{const a=st.agents.find(x=>x.id===i); return a? `${a.name}${a.abbr?' ('+a.abbr+')':''}`:'';}).filter(Boolean).join(' / ');
+const modeOf = code => ERROR_MODES.find(m=>m.code===code);
+const riskName = r => ({3:'High',2:'Medium',1:'Low'})[r]||'Not screened';
+const riskCls = r => ({3:'hi',2:'med',1:'lo'})[r]||'none';
+
+/* ===== Scoring ===== */
+function anScore(an,which='baseline',mode='simple'){
+  const ps=an.pifs||[]; if(!ps.length) return null; let s=0,w=0;
+  ps.forEach(p=>{ const wt = mode==='enhanced'?(p.weight||1):1; const v = which==='modified' ? (p.modified==null?p.baseline:p.modified) : p.baseline; s+=v*wt; w+=wt; });
+  return w? Math.round(s/w):null;
+}
+function priorityOf(an,node,mode){
+  const sc=anScore(an,'baseline',mode); const r=node?.risk||0; if(sc==null) return null;
+  if(r===3&&sc>=60) return 1; if((r===3)||(r===2&&sc>=60)) return 2; return 3;
+}
+const flaggedPifs = an => (an.pifs||[]).filter(p=>p.baseline>=75);
+function scoreColor(v){ if(v==null) return 'var(--line-strong)'; if(v>=75) return 'var(--hi)'; if(v>=60) return 'var(--med)'; if(v>=40) return 'var(--signal)'; return 'var(--lo)'; }
+
+/* ===== Compare WAI vs WAD ===== */
+function words(s){ return new Set(String(s||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(w=>w.length>2)); }
+function similarity(a,b){ const A=words(a),B=words(b); if(!A.size&&!B.size) return 1; let i=0; A.forEach(w=>{if(B.has(w)) i++;}); return i/Math.max(1,Math.min(A.size,B.size)); }
+function compareMaps(st){
+  const wai=st.maps.wai, wad=st.maps.wad; const rows=[];
+  const waiLeaves=leavesOf(wai); if(!waiLeaves.length) return rows;
+  const waiIdx=Object.fromEntries(waiLeaves.map((n,i)=>[n.id,i]));
+  const wadNums=numbering(wad), waiNums=numbering(wai);
+  const linkedBy={}; ordered(wad).forEach(({n})=>{ if(n.link&&wai.nodes[n.link]) (linkedBy[n.link]=linkedBy[n.link]||[]).push(n); });
+  let maxSeen=-1;
+  leavesOf(wad).forEach(n=>{
+    if(!n.link||!wai.nodes[n.link]){ rows.push({key:n.id,kind:'Added',wad:n,wai:null,wadNum:wadNums[n.id]}); return; }
+    const w=wai.nodes[n.link]; const flags=[];
+    const idx=waiIdx[w.id]; if(idx!=null){ if(idx<maxSeen) flags.push('Moved'); maxSeen=Math.max(maxSeen,idx); }
+    const aW=agentLabel(st,w.agents), aD=agentLabel(st,n.agents); if(aW&&aD&&aW!==aD) flags.push('Re-assigned');
+    if(similarity(w.label,n.label)<0.5) flags.push('Re-worded');
+    if((linkedBy[w.id]||[]).length>1 && linkedBy[w.id][0].id===n.id) flags.push('Split');
+    if(flags.length) rows.push({key:n.id,kind:flags.join(', '),wad:n,wai:w,wadNum:wadNums[n.id],waiNum:waiNums[w.id],ref:w.ref});
+  });
+  waiLeaves.forEach(w=>{ if(!linkedBy[w.id]) rows.push({key:w.id,kind:'Missing',wad:null,wai:w,waiNum:waiNums[w.id],ref:w.ref}); });
+  return rows;
+}
+
+/* ===== Gates ===== */
+function gates(st){
+  const g={}; const wad=st.maps.wad; const wadLeaves=leavesOf(wad); const nums=numbering(wad);
+  const setupIssues=[]; if(!st.meta.title||st.meta.title==='Untitled study') setupIssues.push('Give the study a title');
+  if(!st.meta.goal) setupIssues.push('State the task goal'); if(!st.agents.length) setupIssues.push('Add at least one Agent/Person (role)');
+  if(!st.meta.interviewees) setupIssues.push('Record who described work as done (interviewees)');
+  g.setup=setupIssues;
+  const mapIssues=[]; if(!wadLeaves.length) mapIssues.push('Build the work-as-done map (it has no steps yet)');
+  const noAgent=wadLeaves.filter(n=>!n.agents.length); if(noAgent.length) mapIssues.push(`${noAgent.length} step(s) have no Agent/Person, e.g. ${nums[noAgent[0].id]}`);
+  const empty=ordered(wad).filter(x=>!x.n.label.trim()); if(empty.length) mapIssues.push(`${empty.length} box(es) have no label`);
+  const condNoText=ordered(wad).filter(x=>x.n.children.length&&x.n.plan.type==='cond'&&!x.n.plan.text.trim()); if(condNoText.length) mapIssues.push(`${condNoText.length} conditional plan(s) have no rule text`);
+  g.map=mapIssues;
+  const cmp=compareMaps(st); const undecided=cmp.filter(r=>!(st.gaps[r.key]?.decision)); g.compare = leavesOf(st.maps.wai).length? (undecided.length?[`${undecided.length} of ${cmp.length} differences have no decision yet`]:[]) : ['No work-as-imagined map to compare (optional: import the procedure in stage 2)'];
+  const unscr=wadLeaves.filter(n=>!n.risk); const noReason=wadLeaves.filter(n=>n.risk>=2&&!n.riskReason.trim());
+  g.screen=[]; if(unscr.length) g.screen.push(`${unscr.length} step(s) not screened`); if(noReason.length) g.screen.push(`${noReason.length} Medium/High step(s) have no reason`);
+  const carried=wadLeaves.filter(n=>n.risk>=2); g.errors=[];
+  carried.forEach(n=>{ const ans=st.analyses.filter(a=>a.nodeId===n.id); if(!n.activity) g.errors.push(`${nums[n.id]} has no activity type`);
+    else if(!ans.length && !n.noneCredible) g.errors.push(`${nums[n.id]} has no error mode (or a "none credible" reason)`);
+    ans.filter(a=>a.credible).forEach(a=>{ if(!a.errorType||!a.consequence||!(a.consTypes||[]).length) g.errors.push(`${nums[n.id]} ${a.mode}: error type, consequence or consequence type missing`); });
+  });
+  g.pifs=[]; st.analyses.filter(a=>a.credible&&wad.nodes[a.nodeId]).forEach(a=>{ const n=wad.nodes[a.nodeId];
+    if((a.pifs||[]).length<3) g.pifs.push(`${nums[n.id]} ${a.mode}: ${(a.pifs||[]).length} PIF(s) rated, 3 expected`);
+    const nr=(a.pifs||[]).filter(p=>p.baseline!==50&&!String(p.reason||'').trim()); if(nr.length) g.pifs.push(`${nums[n.id]} ${a.mode}: ${nr.length} rating(s) without a reason`); });
+  g.controls=[]; st.analyses.filter(a=>a.credible&&wad.nodes[a.nodeId]).forEach(a=>{ const n=wad.nodes[a.nodeId];
+    flaggedPifs(a).forEach(p=>{ const has=(a.improvements||[]).some(i=>i.status!=='Rejected'&&(i.pifIds||[]).includes(p.id)); if(!has&&!String(p.noControlReason||'').trim()) g.controls.push(`${nums[n.id]} ${a.mode}: "${p.name}" (${p.baseline}) has no improvement`); });
+    (a.improvements||[]).filter(i=>i.status!=='Rejected'&&(!i.owner||!i.due)).forEach(()=>g.controls.push(`${nums[n.id]} ${a.mode}: an improvement has no owner or due date`)); });
+  g.outputs=[]; g.grid=[];
+  return g;
+}
+
+/* ===================== Example studies ===================== */
+function buildTanker(){
+  const st=newStudy('Road tanker offloading — SCTA (example)');
+  Object.assign(st.meta,{goal:'Offload from road tanker',site:'Example chemical site',facility:'Road tanker offloading point',studyType:'SCTA',revision:'1',owner:'Lead analyst',
+    team:'HF specialist (facilitator), process safety engineer, shift team leader',interviewees:'Tanker driver, offloading operator (walk-through at the offloading point)',
+    preconditions:'Tanker at site\n\nEquipment:\nOffloading checklist\nOperator PPE\n\nPersonnel:\nTanker Driver (TD)\nOperator (Op)\nTeam Leader (TL)',
+    notes:'Example built from the HRA "Watch SHERPA in Action" webinar demo (14 Oct 2026). Procedure wording is reconstructed from the screen. Ratings and wording marked "example" were added to show the workflow; replace them with your own study data.',isExample:true});
+  const TD={id:uid('a'),name:'Tanker Driver',abbr:'TD',color:PALETTE[0]}, OP={id:uid('a'),name:'Operator',abbr:'Op',color:PALETTE[1]}, TL={id:uid('a'),name:'Team Leader',abbr:'TL',color:PALETTE[2]};
+  st.agents=[TD,OP,TL];
+  st.locations=[{id:uid('l'),name:'Front gate',color:PALETTE[3]},{id:uid('l'),name:'Control room',color:PALETTE[2]},{id:uid('l'),name:'Offloading point',color:PALETTE[4]}];
+  const [GATE,CR,OFF]=st.locations.map(l=>l.id);
+  // Work as imagined (procedure)
+  const wai=newMap('Offload from road tanker'); wai.source='Road tanker offloading procedure (Word), 34 steps'; wai.capturedOn=today();
+  const proc=[
+    ['Perform tanker arrival operations',[
+      [1,'Check tanker is expected on SAP system in control room'],[2,'Print delivery checklist and begin completing relevant sections'],[3,'Ensure the delivery has the correct paperwork at front gate'],
+      [4,'Ensure the driver is aware of the site safety rules and has the required PPE (PVC suit, gloves, visor and hard hat)'],[5,'Ensure the tanker ID no. corresponds to the no. on the paperwork'],
+      [6,'Check the UN no. on the road barrel matches that of the material on the paperwork'],[7,'Ensure there is sufficient room in the tank and sign the driver\'s paperwork to confirm'],
+      [8,'Confirm which tank is to accept the offload. The plant operator will set the valve on the offloading line to the correct destination tank on the control room system'],
+      [9,'Weigh in the load at the weighbridge by front gate'],[10,'Issue the key to the Castell Salvo key cabinet'],
+      [11,'Issue the driver with a 2-way radio, check the 2-way radio is communicating with the team leader\'s radio prior to commencing the offload'],[12,'Direct the driver to the designated loading point']]],
+    ['Perform loading operations at the loading point',[
+      [13,'Ensure the correct PPE is being worn (see step 4)'],[14,'Check the safety shower and eye wash point are operational'],[15,'Check there is running water available'],[16,'Check the emergency telephone is operational'],
+      [17,'Attach the earthing clip to the tanker, ensure connection is secure and the unit is showing green flashing light. If the earth bonding system fails contact the team leader to manage the override'],
+      [18,'Chock the wheels'],[19,'Remove the Salvo lock from the cabinet and fit the Salvo lock to the tanker to release the valve key'],[20,'Prior to connecting the dedicated hose to the tanker ensure the gasket is OK'],
+      [21,'Connect the hose to the tanker outlet. Ensure the screw connection is not cross-threaded as this could result in leaks. Using a pin lug spanner wrench, tighten up the connection'],
+      [22,'Ensure the tanker is vented to atmosphere'],[23,'Fit the Salvo key into the pump inlet valve'],[24,'Open the pump inlet valve'],[25,'Open the tanker foot valve'],[26,'Open the tanker manual isolation valve'],
+      [27,'Open the pump discharge valve and start the scrubber'],[28,'Open the spring-loaded bypass valve to aid in priming the pump (hold open for approx. 30 seconds)'],[29,'Start the discharge pump']]],
+    ['Perform offloading subtask',[[30,'Check for leaks'],[31,'Monitor the offloading throughout'],[32,'Monitor the tank level via local gauges. Confirm that the tank level of the storage tank selected is increasing as expected']]],
+    ['Disconnect',[[33,'Ensure the offloading hose is empty'],[34,'Close the pump outlet and stop the pump']]]
+  ];
+  const waiByRef={};
+  proc.forEach(([g,steps])=>{ const gn=addChild(wai,wai.rootId,g); steps.forEach(([r,t])=>{ const s=addChild(wai,gn.id,t,null,{ref:r+'.',agents:[OP.id]}); waiByRef[r]=s.id; }); });
+  st.maps.wai=wai;
+  // Work as done (demo task map)
+  const wad=newMap('Offload from road tanker'); wad.source='Walk-through with tanker driver and operator'; wad.capturedOn=today();
+  const L=(label,ref,ag,opts={})=>({label,ref,ag,opts});
+  const tasks=[
+    ['Tanker arrival and initial checks',[OP.id],{},[
+      L('Check tanker is expected on SAP system in control room (1.)',1,[OP.id],{where:CR}),L('Print delivery checklist and begin completing relevant sections (2.)',2,[OP.id],{where:CR}),
+      L('Ensure the delivery has the correct paperwork at front gate (3.)',3,[OP.id],{where:GATE}),
+      L('Ensure the driver is aware of the site safety rules (4.)',4,[OP.id],{where:GATE}),L('Ensure the driver has the required PPE (PVC suit, gloves, visor and hard hat) (4.)',4,[OP.id],{where:GATE}),
+      L('Ensure the tanker ID no. corresponds to the no. on the paperwork (5.)',5,[OP.id],{where:GATE}),L('Check the UN no. on the road barrel matches the material on the paperwork (6.)',6,[OP.id],{where:GATE}),
+      L('Weigh in the load at the weighbridge by front gate (9.)',9,[OP.id],{where:GATE}),
+      L('Ensure there is sufficient room in the tank and sign the driver\'s paperwork to confirm (7.)',7,[OP.id],{where:CR}),L('Confirm which tank is to accept the offload; plant operator sets the destination valve (8.)',8,[OP.id],{where:CR}),
+      L('Issue the key to the Castell Salvo key cabinet (10.)',10,[OP.id],{where:GATE}),L('Issue the driver with a 2-way radio and check it communicates with the team leader\'s radio (11.)',11,[OP.id],{where:GATE}),
+      L('Direct the driver to the designated loading point (12.)',12,[OP.id],{where:GATE})]],
+    ['Do safety checks at offloading point',[TD.id],{},[
+      L('Ensure the correct PPE is being worn (see previous step for details on PPE) (13.)',13,[TD.id],{where:OFF}),L('Check the eye wash point is operational (14.)',14,[TD.id],{where:OFF}),
+      L('Check the safety shower is operational (14.)',14,[TD.id],{where:OFF}),L('Check there is running water available (15.)',15,[TD.id],{where:OFF}),L('Check the emergency telephone is operational (16.)',16,[TD.id],{where:OFF})]],
+    ['Establish earth connection',[TD.id,OP.id],{plan:{type:'cond',text:'Do 1-3. If the earth bonding system fails do 4.'}},[
+      L('Attach the earthing clip to the tanker (17.)',17,[TD.id,OP.id],{where:OFF}),L('Ensure connection is secure (17.)',17,[TD.id,OP.id],{where:OFF}),
+      L('Ensure the unit is showing green flashing light (17.)',17,[TD.id,OP.id],{where:OFF}),L('Contact the team leader to manage the override (17.)',17,[TD.id,OP.id],{where:OFF})]],
+    ['Secure tanker into position',[OP.id],{},[L('Chock the wheels (18.)',18,[OP.id],{where:OFF}),L('Fit the Salvo lock to the tanker to release the valve key (19.)',19,[OP.id],{where:OFF})]],
+    ['Connect tanker for offloading',[OP.id],{},[
+      L('Ensure the gasket is in good condition (20.)',20,[OP.id],{where:OFF,warnings:'Be aware of gasket coming loose during offloading',comments:'Additional gaskets can be obtained from store room'}),
+      L('Connect the hose to the tanker outlet (21.)',21,[OP.id],{where:OFF}),L('Ensure that the screw connection is not cross-threaded (21.)',21,[OP.id],{where:OFF}),
+      L('Tighten up connection using a pin lug spanner wrench (21.)',21,[OP.id],{where:OFF}),L('Ensure the tanker is vented to atmosphere (22.)',22,[OP.id],{where:OFF})]],
+    ['Offload tanker',[OP.id],{},[
+      L('Fit the Salvo key into the pump inlet valve (23.)',23,[OP.id],{where:OFF}),L('Open the pump inlet valve (24.)',24,[OP.id],{where:OFF}),L('Open the tanker foot valve (25.)',25,[OP.id],{where:OFF}),
+      L('Open the tanker manual isolation valve (26.)',26,[OP.id],{where:OFF}),L('Open the pump discharge valve and start the scrubber (27.)',27,[OP.id],{where:OFF}),
+      L('Open the spring-loaded bypass valve to prime the pump, hold approx. 30 s (28.)',28,[OP.id],{where:OFF}),L('Start the discharge pump (29.)',29,[OP.id],{where:OFF})]],
+    ['Monitor the offloading (31.)',[TD.id,OP.id],{},[
+      L('Check for leaks (30.)',30,[TD.id,OP.id],{where:OFF,activity:'CH'}),L('Monitor the tank level via local gauges (32.)',32,[TD.id,OP.id],{where:OFF,activity:'MON'}),
+      L('Confirm that the tank level of the storage tank selected is increasing as expected (32.)',32,[TD.id,OP.id],{where:OFF,activity:'CH'})]],
+    ['Disconnect tanker',[TD.id,OP.id],{},[L('Ensure the offloading hose is empty (33.)',33,[TD.id,OP.id],{where:OFF}),L('Close the pump outlet and stop the pump (34.)',34,[TD.id,OP.id],{where:OFF})]],
+    ['Complete task administration',[TD.id,OP.id],{},[]]
+  ];
+  const ids={};
+  tasks.forEach(([label,ag,opts,subs],ti)=>{ const t=addChild(wad,wad.rootId,label,null,Object.assign({agents:ag},opts));
+    subs.forEach((s,si)=>{ const n=addChild(wad,t.id,s.label,null,Object.assign({agents:s.ag,ref:s.ref+'.',link:waiByRef[s.ref]||null},s.opts)); ids[`${ti+1}.${si+1}`]=n.id; });
+    if(!subs.length){ ids[String(ti+1)]=t.id; t.where=CR; } });
+  st.maps.wad=wad;
+  // screening
+  const W=wad.nodes;
+  leavesOf(wad).forEach(n=>{ n.risk=1; n.riskReason=''; });
+  ['2.1','2.2','2.3','2.4','2.5'].forEach(k=>{ W[ids[k]].risk=3; W[ids[k]].riskReason='Emergency equipment and PPE: failure leaves people unprotected during a chemical release'; });
+  ['3.1','3.2','3.3','3.4'].forEach(k=>{ W[ids[k]].risk=2; W[ids[k]].riskReason='Static ignition source if earth bonding is missed or overridden'; });
+  W[ids['5.1']].risk=2; W[ids['5.1']].riskReason='Gasket failure gives a leak at the hose connection';
+  W[ids['5.3']].risk=2; W[ids['5.3']].riskReason='Cross-threaded connection could result in leaks';
+  W[ids['7.1']].risk=3; W[ids['7.1']].riskReason='Undetected leak during offloading: possible loss of containment';
+  W[ids['7.2']].risk=3; W[ids['7.2']].riskReason='Tank overfill if level is not monitored';
+  W[ids['7.3']].risk=2; W[ids['7.3']].riskReason='Wrong tank or overfill not detected';
+  W[ids['1.10']].risk=2; W[ids['1.10']].riskReason='Wrong destination tank: incompatible chemicals mixed';
+  W[ids['1.7']].risk=2; W[ids['1.7']].riskReason='Wrong material accepted';
+  [['2.1','CH'],['2.2','CH'],['2.3','CH'],['2.4','CH'],['2.5','CH'],['3.1','ACT'],['3.2','CH'],['3.3','CH'],['3.4','COM'],['5.1','CH'],['5.3','CH'],['1.7','CH'],['1.10','SEL']].forEach(([k,a])=>{ W[ids[k]].activity=a; });
+  W[ids['7.1']].critical=true; W[ids['7.2']].critical=true; W[ids['1.10']].critical=true;
+  // analyses
+  const P=(id,baseline,reason,extra={})=>Object.assign({id:uid('p'),pifId:id,name:PIF[id].name,statement:PIF[id].st,baseline,modified:null,reason,weight:1},extra);
+  const A=(nodeKey,mode,f)=>Object.assign({id:uid('e'),nodeId:ids[nodeKey],mode,errorDesc:'',errorType:'',consequence:'',consTypes:[],controls:'',recovery:'',credible:true,notCredibleReason:'',notes:'',designReq:'',verifReq:'',pifNotes:'',pifs:[],improvements:[]},f);
+  const env=P('environment',75,'Task is conducted in evenings and late nights, which hinders visibility, especially in poor weather (from the PIF note; rating added for the example)',{modified:25});
+  st.analyses=[
+    A('7.1','CH1',{errorDesc:'Operator fails to check for leaks',errorType:'Lapse',consequence:'Possible loss of containment (LoC)',consTypes:['Possible MAH'],controls:'Alarm\nBund\nESD',
+      pifNotes:'–ve Proximity: ESD is located nearby.\n–ve Task: conducted in evenings and late nights, which would hinder visibility, especially in poor weather.',
+      pifs:[env,P('time',50,''),P('distraction',50,'')],
+      improvements:[{id:uid('i'),text:'Consider installing better lighting at site',level:'ENV',pifIds:[env.id],owner:'Site engineering',due:'2026-12-15',status:'Accepted',verification:'Lux survey at the offloading point at night',source:'Demo'}]}),
+    A('7.1','CH2',{errorDesc:'Operator does not check for leak thoroughly',errorType:'Slip',consequence:'Possible loss of containment (LoC)',consTypes:['Possible MAH'],controls:'As above',pifs:[]}),
+    A('7.2','MON1',{errorDesc:'Operator does not monitor the offload',errorType:'Lapse',consequence:'Tank overfill and loss of containment (example wording)',consTypes:['Possible MAH'],controls:'Alarm\nBund\nESD',
+      pifs:[P('time',75,'Several tankers queued at peak times (example rating)'),P('workload',50,''),P('redundancy',75,'Crew rely on the high-level alarm to tell them when to stop (example rating)')]}),
+    A('7.2','MON3',{errorDesc:'Monitoring interrupted at shift change or when the driver leaves the point (example wording)',errorType:'Lapse',consequence:'Overfill not detected',consTypes:['Possible MAH'],controls:'Alarm',pifs:[]}),
+    A('7.3','CH1',{errorDesc:'Operator does not confirm the selected tank level is rising (example wording)',errorType:'Lapse',consequence:'Product sent to the wrong tank, or overfill not detected',consTypes:['Possible MAH'],controls:'Control room confirms destination valve',
+      pifs:[P('fatigue',25,'Day shift task; fatigue below the norm (demo rating)'),P('workload',75,'Operator also covers the weighbridge (demo rating)'),P('training',100,'Operators were not aware why the level check is needed (demo rating)')]}),
+    A('7.3','CH5',{errorDesc:'Level checked too late, after a large volume has transferred (example wording)',errorType:'Lapse',consequence:'Overfill or wrong tank not detected in time',consTypes:['Possible MAH'],controls:'High-level alarm',
+      pifs:[P('omission',75,'Nothing prompts the check at a set time (example rating)'),P('complexity',50,'')]})
+  ];
+  st.competence={[ids['7.3']]:{criticalDeviation:'Level of the selected storage tank is not confirmed as rising; product could be going to the wrong tank or an overfill could go undetected.',knowledge:'Able to explain why the level of the selected tank must be seen to rise, and what to do if it does not',skills:'Able to read the local level gauges and compare with the control room reading',experience:'Has carried out supervised offloads including a simulated wrong-tank scenario',refDoc:'Road tanker offloading procedure, step 32'}};
+  st.gaps={};
+  return st;
+}
+function buildConsole(){
+  const st=newStudy('Operate complicated equipment — design review (example)');
+  Object.assign(st.meta,{goal:'Operate complicated equipment',studyType:'Design review',revision:'A',site:'Design project',facility:'Operator consoles A, B and C',
+    team:'Design engineer, HF specialist',interviewees:'Experienced operator (talk-through of the console layout)',preconditions:'Equipment powered and handed over for operation',
+    notes:'Example from the engineering-projects part of the HRA SHERPA webinar demo. Shows design and verification requirement columns.',isExample:true});
+  const PA={id:uid('a'),name:'Person A',abbr:'Person A',color:PALETTE[2]}; st.agents=[PA];
+  st.locations=[{id:uid('l'),name:'Console A',color:PALETTE[0]},{id:uid('l'),name:'Console B',color:PALETTE[1]},{id:uid('l'),name:'Console C',color:PALETTE[2]}];
+  const [CA,CB,CC]=st.locations.map(l=>l.id);
+  const wad=newMap('Operate complicated equipment');
+  const t1=addChild(wad,wad.rootId,'Start equipment',null,{agents:[PA.id]});
+  addChild(wad,wad.rootId,'Maintain equipment running',null,{agents:[PA.id],where:CB,risk:1});
+  addChild(wad,wad.rootId,'Stop equipment',null,{agents:[PA.id],where:CA,risk:1});
+  const steps=[['Confirm power is on',CA,'00:00:00','00:02:00','CH',1],['Check all status lights',CA,'00:02:00','00:04:00','CH',3],['Change system parameters',CB,'00:04:00','00:08:00','ACT',2],
+    ['Set controller to X',CC,'00:08:00','00:09:00','ACT',2],['Monitor system status in response to change to controller X',CC,'00:09:00','00:14:00','MON',2],['Monitor parameters',CB,'00:12:00','00:15:00','MON',1],['Stop change to controller X',CC,'00:14:00','00:15:00','ACT',1]];
+  const sid=steps.map(([l,w,s,f,a,r])=>addChild(wad,t1.id,l,null,{agents:[PA.id],where:w,start:s,finish:f,activity:a,risk:r,riskReason:r>=2?'Equipment may be started or run outside safe limits':''}).id);
+  st.maps.wad=wad;
+  const A=(i,mode,f)=>Object.assign({id:uid('e'),nodeId:sid[i],mode,errorDesc:'',errorType:'',consequence:'',consTypes:[],controls:'',recovery:'',credible:true,notCredibleReason:'',notes:'',designReq:'',verifReq:'',pifNotes:'',pifs:[],improvements:[]},f);
+  const P=(id,b,r)=>({id:uid('p'),pifId:id,name:PIF[id].name,statement:PIF[id].st,baseline:b,modified:null,reason:r,weight:1});
+  st.analyses=[
+    A(1,'CH1',{errorDesc:'Fail to check status lights',errorType:'Lapse',consequence:'No appreciation of system status. Equipment may not be safe to start',consTypes:['Process safety'],designReq:'Status light needs to be positioned at X\nStatus light needs to be X brightness',verifReq:'Operator correctly confirms status of equipment',pifs:[P('equipment',75,'Lights sit below the operator\'s line of sight (example)'),P('feedback',50,''),P('time',50,'')]}),
+    A(1,'CH3',{errorDesc:'Checks wrong status lights',errorType:'Slip',consequence:'Incorrect appreciation of system status. May assume system is safe to start when it is not',consTypes:['Process safety'],designReq:'Status lights should be clearly labelled and, if possible, separate from alternative systems indicators',verifReq:'Operator confirmed to have checked correct status lights',pifs:[P('similarity',100,'Identical lights for two systems side by side (example)'),P('labelling',75,'Labels small and abbreviated (example)'),P('environment',50,'')]}),
+    A(1,'CH2',{errorDesc:'Fail to check ALL status lights',errorType:'Lapse',consequence:'No full appreciation of system status. Missing information; aspects of the system may not be identified',consTypes:['Process safety'],designReq:'Status lights need to be grouped in one location of the equipment panel',verifReq:'Operator checks status of ALL status lights',pifs:[P('complexity',75,'Lights spread across two consoles (example)'),P('omission',50,''),P('workload',50,'')]})
+  ];
+  return st;
+}
+
+/* ===================== UI ===================== */
+const {useState,useEffect,useMemo,useRef,useCallback} = React;
+const camel=s=>s.trim().replace(/-([a-z])/g,(_,c)=>c.toUpperCase());
+function parseStyle(s){ const o={}; String(s).split(';').forEach(d=>{ const i=d.indexOf(':'); if(i<0) return; const k=d.slice(0,i).trim(); const v=d.slice(i+1).trim(); if(!k||!v) return; o[k.startsWith('--')?k:camel(k)]=v; }); return o; }
+function h(type,props,...ch){ if(props){ if(typeof props.style==='string') props.style=parseStyle(props.style); if('class' in props){ props.className=props.class; delete props.class; } if('for' in props){ props.htmlFor=props.for; delete props.for; } if('colspan' in props){ props.colSpan=props.colspan; delete props.colspan; } } return React.createElement(type,props,...ch); }
+const html = htm.bind(h);
+
+/* ---- storage (per-browser drafts) ---- */
+const LS = {
+  get(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v);}catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true;}catch(e){ return false; } },
+  del(k){ try{ localStorage.removeItem(k);}catch(e){} }
+};
+const IDX='sherpaStudio.index', SK=id=>'sherpaStudio.s.'+id;
+function saveStudyLS(st){ const ok=LS.set(SK(st.id),st); const idx=LS.get(IDX,[]).filter(x=>x.id!==st.id); idx.unshift({id:st.id,title:st.meta.title,type:st.meta.studyType,updated:st.updated,example:!!st.meta.isExample}); LS.set(IDX,idx.slice(0,60)); return ok; }
+
+/* ---- capability helpers ---- */
+const capCache={};
+function cap(name){ if(!(name in capCache)){ capCache[name] = (window.claude && typeof window.claude.use==='function') ? window.claude.use(name).catch(()=>null) : Promise.resolve(null); } return capCache[name]; }
+async function saveFile(filename,data,notify){
+  const dl = await cap('downloads');
+  if(dl){ try{ await dl.save({filename,data}); notify&&notify('Saved '+filename); return true; }
+    catch(e){ const c=e&&e.code; if(c==='declined'){ notify&&notify('Download cancelled'); return false; } if(c==='rate_limited'){ notify&&notify('A save prompt is already open'); return false; } notify&&notify('This view cannot save files ('+(c||'unavailable')+')'); return false; } }
+  if(window.claude && typeof window.claude.use==='function'){ notify&&notify('Saving files is not available in this view'); return false; }
+  const blob = data instanceof Blob ? data : new Blob([data],{type:'application/octet-stream'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(url); a.remove();},1500); notify&&notify('Downloaded '+filename); return true;
+}
+const libs={};
+function loadScript(src){ if(!libs[src]) libs[src]=new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=()=>{ delete libs[src]; rej(new Error('Could not load '+src)); }; document.head.appendChild(s); }); return libs[src]; }
+const loadDocx=()=>loadScript('https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js').then(()=>window.docx);
+const loadXlsx=()=>loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js').then(()=>window.XLSX);
+function useCap(name){ const [v,setV]=useState(null); useEffect(()=>{ let on=true; cap(name).then(x=>{ if(on) setV(x||null); }); return ()=>{on=false}; },[name]); return v; }
+
+/* ---- small components ---- */
+function Field({label,hint,children,style}){ return html`<label class="f" style=${style}>${label}${hint?html` <span class="hint">${hint}</span>`:null}${children}</label>`; }
+function Txt({value,onChange,placeholder,id,rows}){ return rows ? html`<textarea id=${id} rows=${rows} value=${value||''} placeholder=${placeholder||''} onInput=${e=>onChange(e.target.value)}></textarea>` : html`<input id=${id} type="text" value=${value||''} placeholder=${placeholder||''} onInput=${e=>onChange(e.target.value)}/>`; }
+function RiskPill({r}){ return html`<span class=${'pill '+riskCls(r)}>${riskName(r)}</span>`; }
+function Meter({v,label}){ return html`<span class="row" style="gap:6px;flex-wrap:nowrap" title=${label||''}><span class="meter" style="width:90px"><i style=${{width:(v??0)+'%',background:scoreColor(v)}}></i></span><span class="mono small">${v==null?'—':v}</span></span>`; }
+function PriPill({p}){ if(!p) return null; return html`<span class=${'pill '+(p===1?'hi':p===2?'med':'lo')}>P${p}</span>`; }
+function Gate({issues,stage,st,update,next,go}){
+  if(!issues) return null;
+  return html`<div class=${'notice gate'+(issues.length?'':' info')}>
+    ${issues.length? html`<div><b>Before moving on</b> — ${issues.length} item${issues.length>1?'s':''} to resolve:</div><ul>${issues.slice(0,6).map((x,i)=>html`<li key=${i}>${x}</li>`)}${issues.length>6?html`<li>and ${issues.length-6} more</li>`:null}</ul>
+      <div class="row"><input type="text" id=${'gate-'+stage} placeholder="Or record why you are proceeding anyway" value=${st.gateNotes[stage]||''} onInput=${e=>update(s=>{s.gateNotes[stage]=e.target.value;})} style="max-width:420px"/>${next?html`<button class="btn sm" onClick=${()=>go(next)}>Continue to next stage</button>`:null}</div>`
+    : html`<div class="row"><b>Stage complete.</b>${next?html`<button class="btn primary sm" onClick=${()=>go(next)}>Continue →</button>`:null}</div>`}
+  </div>`;
+}
+function Modal({m,close}){ if(!m) return null; return html`<div class="modal-scrim" onClick=${e=>{if(e.target===e.currentTarget) close();}}><div class="modal" role="dialog" aria-modal="true"><h3>${m.title}</h3><div class="muted">${m.body}</div><div class="row" style="justify-content:flex-end"><button class="btn" onClick=${close}>Cancel</button><button class=${'btn '+(m.danger?'danger':'primary')} onClick=${()=>{close(); m.ok();}}>${m.okLabel||'Confirm'}</button></div></div></div>`; }
+
+/* ---- wrap text for SVG ---- */
+function wrapText(s,max,lines){ const w=String(s||'').split(/\s+/); const out=[]; let cur=''; for(const x of w){ if(!cur) cur=x; else if((cur+' '+x).length<=max) cur+=' '+x; else { out.push(cur); cur=x; if(out.length===lines) break; } } if(out.length<lines&&cur) out.push(cur); const used=out.join(' ').length; if(used < String(s||'').trim().length-1 && out.length){ let l=out[out.length-1]; if(l.length>max-1) l=l.slice(0,max-1); out[out.length-1]=l.replace(/[ ,.;]+$/,'')+'…'; } return out; }
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---- diagram layout + SVG ---- */
+function diagramSVG(st,map,opt){
+  const {colorBy='agent',collapsed={},sel=null,forExport=false}=opt||{};
+  const BW=184,BH=70,HG=20,VG=30,PH=20,SI=26,SG=12,M=24;
+  const nums=numbering(map);
+  const C = forExport ? {ink:'#16201d',ink2:'#4a5853',line:'#7f8e89',box:'#ffffff',bg:'#ffffff',accent:'#0d5c63',sel:'#1f7a8c',plan:'#f3f5f4',hi:'#f6c8c2',med:'#f8dfae',lo:'#cfe9d8'}
+    : {ink:'var(--ink)',ink2:'var(--ink-2)',line:'var(--line-strong)',box:'var(--surface)',bg:'var(--sunk)',accent:'var(--accent)',sel:'var(--focus)',plan:'var(--surface)',hi:'var(--hi-soft)',med:'var(--med-soft)',lo:'var(--lo-soft)'};
+  const kids=id=> collapsed[id]?[]:(map.nodes[id]?.children||[]);
+  const meas={};
+  const measure=id=>{ const k=kids(id); let r;
+    if(!k.length) r={w:BW,h:BH,mode:'leaf'};
+    else if(k.every(c=>!kids(c).length)) r={w:SI+BW,h:BH+PH+VG/2+k.length*(BH+SG),mode:'stack'};
+    else { k.forEach(measure); const cw=k.reduce((s,c)=>s+meas[c].w,0)+HG*(k.length-1); r={w:Math.max(BW,cw),h:BH+PH+VG+Math.max(...k.map(c=>meas[c].h)),mode:'row',cw}; }
+    if(r.mode==='stack') k.forEach(measure);
+    meas[id]=r; return r; };
+  measure(map.rootId);
+  const parts=[]; const lines=[];
+  const fillFor=n=>{
+    if(n.id===map.rootId) return forExport?'#d7e9ea':'var(--accent-soft)';
+    if(colorBy==='risk') return n.risk===3?C.hi:n.risk===2?C.med:n.risk===1?C.lo:C.box;
+    if(colorBy==='agent'){ const a=st.agents.find(x=>x.id===n.agents[0]); return a?a.color+'44':C.box; }
+    if(colorBy==='where'){ const l=st.locations.find(x=>x.id===n.where); return l?l.color+'44':C.box; }
+    if(colorBy==='activity'){ const i=ACTIVITY_TYPES.findIndex(a=>a.code===n.activity); return i>=0?PALETTE[i]+'44':C.box; }
+    return C.box; };
+  const box=(n,x,y)=>{
+    const isSel=n.id===sel; const lab=wrapText(n.label||'(untitled)',27,3); const ap=agentLabel(st,n.agents);
+    const hasKids=(map.nodes[n.id].children||[]).length>0;
+    let g=`<g data-id="${n.id}" style="cursor:pointer">`;
+    if(n.id!==map.rootId) g+=`<text x="${x}" y="${y-5}" font-size="11" font-family="IBM Plex Mono,monospace" fill="${C.ink2}">${esc(nums[n.id])}${n.critical?'  ◆ critical':''}</text>`;
+    else g+=`<text x="${x}" y="${y-5}" font-size="11" font-weight="600" fill="${C.ink2}" letter-spacing="0.06em">GOAL</text>`;
+    g+=`<rect x="${x}" y="${y}" width="${BW}" height="${BH}" rx="7" fill="${fillFor(n)}" stroke="${isSel?C.sel:(n.id===map.rootId?C.accent:C.line)}" stroke-width="${isSel?2.5:1}"/>`;
+    lab.forEach((t,i)=>{ g+=`<text x="${x+9}" y="${y+17+i*14}" font-size="12" font-family="IBM Plex Sans,Arial,sans-serif" fill="${C.ink}" ${n.id===map.rootId?'font-weight="600"':''}>${esc(t)}</text>`; });
+    if(ap) g+=`<text x="${x+9}" y="${y+BH-8}" font-size="10.5" font-family="IBM Plex Sans,Arial,sans-serif" fill="${C.accent}" font-weight="600">A/P: ${esc(ap)}</text>`;
+    if(n.warnings) g+=`<text x="${x+BW-10}" y="${y+BH-8}" font-size="12" text-anchor="end" fill="#b42318" font-weight="700">!</text>`;
+    if(hasKids&&!forExport) g+=`<g data-tog="${n.id}"><rect x="${x+BW-20}" y="${y+4}" width="16" height="16" rx="3" fill="${C.box}" stroke="${C.line}"/><text x="${x+BW-12}" y="${y+16}" text-anchor="middle" font-size="12" fill="${C.ink2}">${collapsed[n.id]?'+':'−'}</text></g>`;
+    g+='</g>'; parts.push(g); };
+  const planText=n=>{ const p=n.plan||{}; const lab=p.type==='cond'?(p.text||'Conditional'):(PLAN_TYPES.find(t=>t.v===p.type)?.l||'Do in sequence'); return `Plan ${nums[n.id]}: ${lab}`; };
+  const place=(id,x,y)=>{ const n=map.nodes[id], m=meas[id], k=kids(id);
+    if(m.mode==='leaf'){ box(n,x,y); return; }
+    if(m.mode==='stack'){ box(n,x,y); const pt=wrapText(planText(n),40,1)[0]; parts.push(`<text x="${x+SI}" y="${y+BH+14}" font-size="10.5" font-style="italic" fill="${C.ink2}">${esc(pt)}</text>`);
+      const sx=x+12; let last=0; k.forEach((c,i)=>{ const cy=y+BH+PH+VG/2+i*(BH+SG); box(map.nodes[c],x+SI,cy); last=cy+BH/2; lines.push(`M${sx} ${cy+BH/2}H${x+SI}`); });
+      lines.push(`M${sx} ${y+BH}V${last}`); return; }
+    let bx=x+(m.w-BW)/2; if(id===map.rootId&&k.length){ const f=meas[k[0]]; bx=x+(m.w-m.cw)/2+(f.mode==='row'?f.w/2-BW/2:0); } box(n,bx,y); const cx=bx+BW/2;
+    const pt=wrapText(planText(n),44,1)[0]; const pw=Math.min(300,pt.length*6.1+16);
+    parts.push(`<rect x="${cx-pw/2}" y="${y+BH+6}" width="${pw}" height="${PH-2}" rx="9" fill="${C.plan}" stroke="${C.line}" stroke-dasharray="3 2"/><text x="${cx}" y="${y+BH+19}" text-anchor="middle" font-size="10.5" font-style="italic" fill="${C.ink2}">${esc(pt)}</text>`);
+    lines.push(`M${cx} ${y+BH}V${y+BH+6}`);
+    const busY=y+BH+PH+VG/2+4; lines.push(`M${cx} ${y+BH+PH+4}V${busY}`);
+    let cxs=[]; let ox=x+(m.w-m.cw)/2; k.forEach(c=>{ const cm=meas[c]; const ccx = cm.mode==='row' ? ox+cm.w/2 : ox + (cm.mode==='stack'?BW/2:BW/2); cxs.push(ccx); place(c,ox,y+BH+PH+VG); ox+=cm.w+HG; });
+    lines.push(`M${Math.min(...cxs)} ${busY}H${Math.max(...cxs)}`); cxs.forEach(c=>lines.push(`M${c} ${busY}V${y+BH+PH+VG}`));
+  };
+  const W=meas[map.rootId].w+M*2, H=meas[map.rootId].h+M*2+10;
+  place(map.rootId,M,M+12);
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Task map: ${esc(map.nodes[map.rootId].label)}">${forExport?`<rect width="${W}" height="${H}" fill="${C.bg}"/>`:''}<path d="${lines.join('')}" fill="none" stroke="${C.line}" stroke-width="1.2"/>${parts.join('')}</svg>`;
+  return svg;
+}
+
+/* ===================== Home ===================== */
+function Home({open,notify,ask}){
+  const [idx,setIdx]=useState(()=>LS.get(IDX,[]));
+  const fileRef=useRef(null);
+  const openId=id=>{ const s=LS.get(SK(id),null); if(s) open(s); else notify('That study could not be found in this browser'); };
+  const del=id=>ask({title:'Delete this study?',body:'It is removed from this browser. Save a study file first if you may need it again.',okLabel:'Delete',danger:true,ok:()=>{ LS.del(SK(id)); const n=LS.get(IDX,[]).filter(x=>x.id!==id); LS.set(IDX,n); setIdx(n); }});
+  const dup=id=>{ const s=LS.get(SK(id),null); if(!s) return; const c=clone(s); c.id=uid('s'); c.meta.title=s.meta.title+' (copy)'; c.updated=new Date().toISOString(); saveStudyLS(c); setIdx(LS.get(IDX,[])); };
+  const onFile=e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ const s=JSON.parse(r.result); if(!s||!s.maps||!s.meta) throw new Error('bad'); if(!s.id) s.id=uid('s'); open(s); }catch(err){ notify('That file is not a SHERPA Studio study (.sherpa.json)'); } }; r.readAsText(f); e.target.value=''; };
+  return html`<div class="wrap" style="max-width:1100px;margin:0 auto;width:100%">
+    <div class="page-head"><div><div class="eyebrow">risk2safe · Safety Critical Task Analysis</div><h2 style="font-size:30px">SHERPA Studio</h2>
+      <p>Map how a task is really done, predict how each step could fail, rate the conditions that make failure likely, and agree the controls that make the right action easy. Exports to Word and Excel at every stage.</p></div></div>
+    <div class="grid3" style="margin-bottom:22px">
+      <div class="card"><h3>New study</h3><p class="muted small" style="margin:0">Start from a blank task map, or paste your procedure in stage 2.</p><div><button class="btn primary" onClick=${()=>open(newStudy())}>Start blank study</button></div></div>
+      <div class="card"><h3>Example: road tanker offloading</h3><p class="muted small" style="margin:0">The webinar demo: 34-step procedure, work-as-done map, error modes, PIF ratings and a lighting improvement.</p><div><button class="btn" onClick=${()=>open(buildTanker())}>Open example</button></div></div>
+      <div class="card"><h3>Example: console design review</h3><p class="muted small" style="margin:0">Design and verification requirements for checking status lights across three consoles.</p><div class="row"><button class="btn" onClick=${()=>open(buildConsole())}>Open example</button><button class="btn ghost" onClick=${()=>fileRef.current.click()}>Open study file…</button><input ref=${fileRef} type="file" accept=".json,application/json" hidden onChange=${onFile}/></div></div>
+    </div>
+    <div class="panel"><div class="panel-h"><h3>Studies in this browser</h3><span class="small faint">Kept in this browser only. Use "Save study file" to keep a copy elsewhere.</span></div>
+      ${idx.length? html`<div class="tbl-wrap" style="border:0;border-radius:0"><table class="tbl"><thead><tr><th>Study</th><th>Type</th><th>Last changed</th><th></th></tr></thead><tbody>
+        ${idx.map(x=>html`<tr key=${x.id}><td><button class="btn ghost" style="padding:2px 0;font-weight:600" onClick=${()=>openId(x.id)}>${x.title||'Untitled study'}</button>${x.example?html` <span class="pill sig">example</span>`:null}</td><td class="small">${x.type}</td><td class="small mono">${(x.updated||'').slice(0,16).replace('T',' ')}</td>
+          <td style="text-align:right;white-space:nowrap"><button class="btn sm" onClick=${()=>openId(x.id)}>Open</button> <button class="btn sm ghost" onClick=${()=>dup(x.id)}>Duplicate</button> <button class="btn sm ghost danger" onClick=${()=>del(x.id)}>Delete</button></td></tr>`)}
+      </tbody></table></div>` : html`<div class="empty">No saved studies yet. Open an example to see the full workflow, or start a blank study.</div>`}
+    </div>
+    <div class="grid2" style="margin-top:22px">
+      ${[['1–3','Map the task','Paste the procedure (work as imagined), rebuild it with the operators as work as done, and review every difference.'],
+         ['4–5','Predict errors','Screen steps High, Medium or Low. For the risky ones, choose how each step could fail: check omitted, wrong object, monitoring interrupted.'],
+         ['6','Assess PIFs','Rate the conditions behind each error on a five-point scale, from best case to worst case, with a reason.'],
+         ['7–8','Improve controls','Act on the worst-rated PIFs with the strongest practical control, then export the risk-informed procedure, competence sheet and report.']].map(([n,t,d])=>html`<div class="row" style="align-items:flex-start;flex-wrap:nowrap" key=${n}><span class="code" style="margin-top:3px">${n}</span><div><b>${t}</b><div class="muted small">${d}</div></div></div>`)}
+    </div>
+  </div>`;
+}
+
+/* ===================== Stage 1: Set up ===================== */
+function Setup({st,update}){
+  const m=st.meta; const set=(k,v)=>update(s=>{s.meta[k]=v;});
+  return html`<div class="split">
+    <div class="panel"><div class="panel-h"><h3>Study details</h3></div><div class="panel-b">
+      <div class="grid2"><${Field} label="Study title"><${Txt} id="m-title" value=${m.title} onChange=${v=>set('title',v)}/><//>
+        <${Field} label="Study type"><select id="m-type" value=${m.studyType} onChange=${e=>set('studyType',e.target.value)}>${STUDY_TYPES.map(t=>html`<option key=${t}>${t}</option>`)}</select><//></div>
+      <${Field} label="Task goal" hint="what the task achieves, e.g. Offload from road tanker"><${Txt} id="m-goal" value=${m.goal} onChange=${v=>update(s=>{s.meta.goal=v; [s.maps.wad,s.maps.wai].forEach(mp=>{ const r=mp.nodes[mp.rootId]; if(!r.label||r.label==='Insert overall task goal'||r.label===m.goal) r.label=v; });})}/><//>
+      <div class="grid3"><${Field} label="Site"><${Txt} id="m-site" value=${m.site} onChange=${v=>set('site',v)}/><//><${Field} label="Facility / unit"><${Txt} id="m-fac" value=${m.facility} onChange=${v=>set('facility',v)}/><//><${Field} label="Revision"><${Txt} id="m-rev" value=${m.revision} onChange=${v=>set('revision',v)}/><//></div>
+      <div class="grid2"><${Field} label="Study date"><input id="m-date" type="date" value=${m.date} onInput=${e=>set('date',e.target.value)}/><//><${Field} label="Study lead"><${Txt} id="m-owner" value=${m.owner} onChange=${v=>set('owner',v)}/><//></div>
+      <${Field} label="Team members"><${Txt} id="m-team" rows="2" value=${m.team} onChange=${v=>set('team',v)}/><//>
+      <${Field} label="Who described work as done" hint="names or roles, date and method (walk-through, talk-through, observation)"><${Txt} id="m-int" rows="2" value=${m.interviewees} onChange=${v=>set('interviewees',v)}/><//>
+      <${Field} label="Preconditions" hint="equipment, personnel and plant state before the task starts"><${Txt} id="m-pre" rows="5" value=${m.preconditions} onChange=${v=>set('preconditions',v)}/><//>
+      <${Field} label="Notes"><${Txt} id="m-notes" rows="3" value=${m.notes} onChange=${v=>set('notes',v)}/><//>
+    </div></div>
+    <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+      <div class="panel"><div class="panel-h"><h3>Agents / persons</h3><button class="btn sm" onClick=${()=>update(s=>{s.agents.push({id:uid('a'),name:'',abbr:'',color:PALETTE[s.agents.length%PALETTE.length]});})}>Add role</button></div><div class="panel-b">
+        <p class="small muted" style="margin:0">The roles that carry out steps. They colour the task map and fill the Role column of the procedure.</p>
+        ${st.agents.map((a,i)=>html`<div class="row" key=${a.id} style="flex-wrap:nowrap"><span class="swatch" style=${{background:a.color,width:14,height:14}}></span>
+          <input type="text" id=${'ag-n-'+a.id} placeholder="Role name" value=${a.name} onInput=${e=>update(s=>{s.agents[i].name=e.target.value;})}/>
+          <input type="text" id=${'ag-a-'+a.id} placeholder="Abbr." style="max-width:90px" value=${a.abbr} onInput=${e=>update(s=>{s.agents[i].abbr=e.target.value;})}/>
+          <select id=${'ag-c-'+a.id} style="max-width:84px" value=${a.color} onChange=${e=>update(s=>{s.agents[i].color=e.target.value;})}>${PALETTE.map((c,j)=>html`<option key=${c} value=${c}>Colour ${j+1}</option>`)}</select>
+          <button class="btn sm ghost danger" aria-label="Remove role" onClick=${()=>update(s=>{s.agents.splice(i,1); Object.values(s.maps.wad.nodes).concat(Object.values(s.maps.wai.nodes)).forEach(n=>{n.agents=n.agents.filter(x=>x!==a.id);});})}>✕</button></div>`)}
+        ${!st.agents.length?html`<div class="small faint">No roles yet.</div>`:null}
+      </div></div>
+      <div class="panel"><div class="panel-h"><h3>Locations (Where)</h3><button class="btn sm" onClick=${()=>update(s=>{s.locations.push({id:uid('l'),name:'',color:PALETTE[(s.locations.length+3)%PALETTE.length]});})}>Add location</button></div><div class="panel-b">
+        ${st.locations.map((l,i)=>html`<div class="row" key=${l.id} style="flex-wrap:nowrap"><span class="swatch" style=${{background:l.color,width:14,height:14}}></span>
+          <input type="text" id=${'lo-n-'+l.id} placeholder="Location, e.g. Console A" value=${l.name} onInput=${e=>update(s=>{s.locations[i].name=e.target.value;})}/>
+          <select id=${'lo-c-'+l.id} style="max-width:84px" value=${l.color} onChange=${e=>update(s=>{s.locations[i].color=e.target.value;})}>${PALETTE.map((c,j)=>html`<option key=${c} value=${c}>Colour ${j+1}</option>`)}</select>
+          <button class="btn sm ghost danger" aria-label="Remove location" onClick=${()=>update(s=>{s.locations.splice(i,1);})}>✕</button></div>`)}
+        ${!st.locations.length?html`<div class="small faint">Optional. Used for colouring the map by location.</div>`:null}
+      </div></div>
+      <div class="panel"><div class="panel-h"><h3>PIF rating mode</h3></div><div class="panel-b">
+        <div class="seg"><button aria-pressed=${m.ratingMode!=='enhanced'} onClick=${()=>set('ratingMode','simple')}>Simple (equal weights)</button><button aria-pressed=${m.ratingMode==='enhanced'} onClick=${()=>set('ratingMode','enhanced')}>Enhanced (weights 1–3)</button></div>
+        <p class="small muted" style="margin:0">The error-mode score is the mean of its PIF ratings. Enhanced mode lets you weight the PIFs that matter most for a step.</p>
+      </div></div>
+    </div></div>`;
+}
+
+/* ===================== Stage 2: Task map ===================== */
+function parsePaste(text){
+  const lines=String(text||'').replace(/\r/g,'').split('\n').filter(l=>l.trim());
+  let rows=lines.map(l=>l.split('\t').map(c=>c.trim()));
+  const maxc=Math.max(0,...rows.map(r=>r.length));
+  if(maxc<=1){ rows=lines.map(l=>{ const m=l.trim().match(/^(\d+(?:\.\d+)*)[\.\)]?\s+(.*)$/); return m?[m[1],m[2]]:['',l.trim()]; }); }
+  return rows;
+}
+function ImportPanel({st,update,notify,ask,onDone}){
+  const [text,setText]=useState(''); const [map,setMap]=useState(null);
+  const rows=useMemo(()=>parsePaste(text),[text]); const ncol=Math.max(0,...rows.map(r=>r.length));
+  useEffect(()=>{ if(!rows.length){ setMap(null); return; } if(ncol>=4) setMap({group:0,step:1,text:2,role:3}); else if(ncol===3) setMap({group:0,step:1,text:2,role:-1}); else if(ncol===2) setMap({group:-1,step:0,text:1,role:-1}); else setMap({group:-1,step:-1,text:0,role:-1}); },[ncol]);
+  const fileRef=useRef(null);
+  const onFile=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
+    try{ if(/\.csv$|\.txt$/i.test(f.name)){ const t=await f.text(); setText(t.split(/\r?\n/).map(l=>l.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(c=>c.replace(/^"|"$/g,'')).join('\t')).join('\n')); return; }
+      const X=await loadXlsx(); const wb=X.read(await f.arrayBuffer()); const ws=wb.Sheets[wb.SheetNames[0]]; const aoa=X.utils.sheet_to_json(ws,{header:1,blankrows:false}); setText(aoa.map(r=>r.map(c=>String(c??'')).join('\t')).join('\n')); }
+    catch(err){ notify('Could not read that file. Copy the table from Word or Excel and paste it instead.'); } };
+  const looksHeader = r => r && /step|description|action|role|task/i.test(r.join(' ')) && !/^\d/.test((r[map?.step]||'').trim());
+  const body = map && rows.length && looksHeader(rows[0]) ? rows.slice(1) : rows;
+  const build=()=>{ if(!map||!body.length) return;
+    const go=()=>update(s=>{ const m=newMap(s.meta.goal||'Insert overall task goal'); m.source='Pasted procedure ('+body.length+' rows)'; m.capturedOn=today();
+      let curGroup=null, curName=null;
+      body.forEach(r=>{ const g = map.group>=0 ? (r[map.group]||'').replace(/^\s*\d+[\.\)]?\s*/,'').trim() : ''; const t=(r[map.text]||'').trim(); if(!t&&!g) return;
+        if(map.group>=0 && g && g!==curName){ curGroup=addChild(m,m.rootId,g).id; curName=g; }
+        if(!t) return; const parent=curGroup||m.rootId; let agents=[];
+        if(map.role>=0 && r[map.role]){ const rn=r[map.role].trim(); let a=s.agents.find(x=>x.name.toLowerCase()===rn.toLowerCase()||x.abbr.toLowerCase()===rn.toLowerCase()); if(!a){ a={id:uid('a'),name:rn,abbr:rn.split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,3),color:PALETTE[s.agents.length%PALETTE.length]}; s.agents.push(a);} agents=[a.id]; }
+        const ref = map.step>=0 ? (r[map.step]||'').replace(/\.$/,'') : ''; addChild(m,parent,t,null,{ref:ref?ref+'.':'',agents}); });
+      s.maps.wai=m; });
+    if(leavesOf(st.maps.wai).length) ask({title:'Replace the work-as-imagined map?',body:'The current work-as-imagined map will be replaced by the pasted procedure. Links from the work-as-done map to old steps will be lost.',okLabel:'Replace',ok:()=>{go(); onDone();}});
+    else { go(); onDone(); } };
+  const colSel=(k,label,opt)=>html`<${Field} label=${label}><select id=${'imp-'+k} value=${map?map[k]:-1} onChange=${e=>setMap(Object.assign({},map,{[k]:+e.target.value}))}>${opt?html`<option value="-1">— none —</option>`:null}${Array.from({length:ncol},(_,i)=>html`<option key=${i} value=${i}>Column ${i+1}${rows[0]&&rows[0][i]?': '+String(rows[0][i]).slice(0,24):''}</option>`)}</select><//>`;
+  return html`<div class="panel"><div class="panel-h"><h3>Bring in the procedure (work as imagined)</h3><div class="row"><button class="btn sm" onClick=${()=>fileRef.current.click()}>Upload .xlsx / .csv</button><input ref=${fileRef} type="file" accept=".xlsx,.xls,.csv,.txt" hidden onChange=${onFile}/></div></div><div class="panel-b">
+    <p class="small muted" style="margin:0">Copy the procedure table from Word or Excel and paste it here. Each row becomes a task box and keeps its step number, so you can trace work as done back to the procedure. A plain numbered list works too.</p>
+    <textarea id="imp-text" rows="7" placeholder=${'Paste here, for example:\n1. Perform tanker arrival operations\t1.\tCheck tanker is expected on SAP system in control room\n\t2.\tPrint delivery checklist and begin completing relevant sections'} value=${text} onInput=${e=>setText(e.target.value)}></textarea>
+    ${rows.length? html`<div class="grid2">${colSel('text','Step text column',false)}${colSel('step','Step number column',true)}${colSel('group','Task / section column',true)}${colSel('role','Role column',true)}</div>
+      <div class="tbl-wrap" style="max-height:220px;overflow:auto"><table class="tbl"><thead><tr><th>Section</th><th>No.</th><th>Step</th><th>Role</th></tr></thead><tbody>${body.slice(0,40).map((r,i)=>html`<tr key=${i}><td class="small">${map&&map.group>=0?r[map.group]:''}</td><td class="num small">${map&&map.step>=0?r[map.step]:''}</td><td class="small">${map?r[map.text]:''}</td><td class="small">${map&&map.role>=0?r[map.role]:''}</td></tr>`)}</tbody></table></div>
+      <div class="row"><button class="btn primary" onClick=${build}>Build work-as-imagined map from ${body.length} rows</button><span class="small faint">Header row skipped automatically when detected.</span></div>`:null}
+  </div></div>`;
+}
+function Outline({st,map,variant,sel,setSel,mut,collapsed,setCollapsed}){
+  const nums=numbering(map); const [focusId,setFocusId]=useState(null);
+  const rows=[]; const go=(id,d)=>{ const n=map.nodes[id]; if(!n) return; rows.push({n,d}); if(!collapsed[id]) n.children.forEach(c=>go(c,d+1)); }; go(map.rootId,0);
+  useEffect(()=>{ if(focusId){ const el=document.getElementById('ol-'+focusId); if(el){ el.focus(); el.select&&el.select(); } setFocusId(null);} },[focusId,map]);
+  const addAfter=id=>{ let nid; mut(m=>{ const n=m.nodes[id]; if(id===m.rootId){ nid=addChild(m,id,'',null).id; return; } const p=m.nodes[n.parent]; const i=p.children.indexOf(id); nid=addChild(m,p.id,'',i+1,{agents:[...n.agents],where:n.where}).id; }); setSel(nid); setFocusId(nid); };
+  const addKid=id=>{ let nid; mut(m=>{ nid=addChild(m,id,'',null,{agents:[...(m.nodes[id].agents||[])]}).id; }); setCollapsed(c=>Object.assign({},c,{[id]:false})); setSel(nid); setFocusId(nid); };
+  const key=(e,n)=>{
+    if(e.key==='Enter'){ e.preventDefault(); addAfter(n.id); }
+    else if(e.key==='Tab'){ e.preventDefault(); if(n.id===map.rootId) return; mut(m=>{ e.shiftKey?outdentNode(m,n.id):indentNode(m,n.id); }); setFocusId(n.id); }
+    else if(e.altKey&&(e.key==='ArrowUp'||e.key==='ArrowDown')){ e.preventDefault(); mut(m=>moveNode(m,n.id,e.key==='ArrowUp'?-1:1)); setFocusId(n.id); }
+  };
+  const s=sel&&map.nodes[sel]?sel:null; const isRoot=s===map.rootId;
+  return html`<div>
+    <div class="toolbar" role="toolbar" aria-label="Task map editing">
+      <button class="btn sm" disabled=${!s} onClick=${()=>addAfter(s)}>+ Step below</button>
+      <button class="btn sm" disabled=${!s} onClick=${()=>addKid(s)}>+ Substep</button>
+      <button class="btn sm" disabled=${!s||isRoot} onClick=${()=>{mut(m=>outdentNode(m,s)); setFocusId(s);}} title="Shift+Tab">← Outdent</button>
+      <button class="btn sm" disabled=${!s||isRoot} onClick=${()=>{mut(m=>indentNode(m,s)); setFocusId(s);}} title="Tab">Indent →</button>
+      <button class="btn sm" disabled=${!s||isRoot} onClick=${()=>mut(m=>moveNode(m,s,-1))} title="Alt+↑">↑</button>
+      <button class="btn sm" disabled=${!s||isRoot} onClick=${()=>mut(m=>moveNode(m,s,1))} title="Alt+↓">↓</button>
+      <span class="grow"></span><span class="small faint hide-sm">Enter = new step · Tab / Shift+Tab = indent · Alt+↑↓ = move</span>
+    </div>
+    <div class="outline">${rows.map(({n,d})=>{ const hasK=n.children.length>0; const ap=agentLabel(st,n.agents);
+      return html`<div key=${n.id} class=${'ol-row'+(n.id===s?' sel':'')} onClick=${()=>setSel(n.id)} style=${{paddingLeft:6+d*18}}>
+        <button class="tw" aria-label=${hasK?(collapsed[n.id]?'Expand':'Collapse'):''} onClick=${e=>{e.stopPropagation(); if(hasK) setCollapsed(c=>Object.assign({},c,{[n.id]:!c[n.id]}));}}>${hasK?(collapsed[n.id]?'▸':'▾'):''}</button>
+        <span class="num">${n.id===map.rootId?'Goal':nums[n.id]}</span>
+        <input id=${'ol-'+n.id} type="text" aria-label="Step text" value=${n.label} placeholder=${n.id===map.rootId?'Task goal':'Describe the step'} style=${n.id===map.rootId||hasK?{fontWeight:600}:null}
+          onFocus=${()=>setSel(n.id)} onInput=${e=>{const v=e.target.value; mut(m=>{m.nodes[n.id].label=v;});}} onKeyDown=${e=>key(e,n)}/>
+        <span class="meta">${n.ref?html`<span class="code" title="Procedure step">${n.ref}</span>`:null}${variant==='wad'&&n.risk?html`<${RiskPill} r=${n.risk}/>`:null}${ap?html`<span class="small faint hide-sm">${ap}</span>`:null}${n.warnings?html`<span class="pill hi" title=${n.warnings}>!</span>`:null}</span>
+      </div>`; })}</div>
+  </div>`;
+}
+function Inspector({st,map,variant,sel,mut,update,ask,setSel}){
+  const n=map.nodes[sel]; const fileRef=useRef(null);
+  if(!n) return html`<div class="panel"><div class="panel-b empty">Select a box to see and edit its details.</div></div>`;
+  const nums=numbering(map); const isRoot=n.id===map.rootId; const hasK=n.children.length>0;
+  const set=(k,v)=>mut(m=>{ m.nodes[n.id][k]=v; });
+  const waiLeaves = variant==='wad' ? leavesOf(st.maps.wai) : []; const waiNums=numbering(st.maps.wai);
+  const addPhoto=e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return; const r=new FileReader(); r.onload=()=>{ const img=new Image(); img.onload=()=>{ const sc=Math.min(1,900/Math.max(img.width,img.height)); const c=document.createElement('canvas'); c.width=Math.round(img.width*sc); c.height=Math.round(img.height*sc); c.getContext('2d').drawImage(img,0,0,c.width,c.height); const d=c.toDataURL('image/jpeg',0.82); mut(m=>{ m.nodes[n.id].photos=(m.nodes[n.id].photos||[]).concat([{id:uid('img'),data:d,caption:f.name}]); }); }; img.src=r.result; }; r.readAsDataURL(f); };
+  return html`<div class="panel sticky"><div class="panel-h"><h3>${isRoot?'Goal':'Step '+nums[n.id]}</h3>${!isRoot?html`<button class="btn sm ghost danger" onClick=${()=>ask({title:'Delete this box?',body:hasK?'This box and everything under it will be deleted, with any error analysis on those steps.':'This box and any error analysis on it will be deleted.',okLabel:'Delete',danger:true,ok:()=>{ const kill=[]; walk({rootId:n.id,nodes:map.nodes},x=>kill.push(x.id)); update(s=>{ removeNode(s.maps[variant],n.id); if(variant==='wad') s.analyses=s.analyses.filter(a=>!kill.includes(a.nodeId)); }); setSel(n.parent); }})}>Delete</button>`:null}</div>
+    <div class="panel-b">
+      <${Field} label=${isRoot?'Task goal':'Step text'}><${Txt} id="in-label" rows="2" value=${n.label} onChange=${v=>set('label',v)}/><//>
+      ${hasK?html`<${Field} label="Plan" hint="how the substeps are carried out"><div class="row" style="flex-wrap:nowrap"><select id="in-plan" style="max-width:180px" value=${n.plan.type} onChange=${e=>mut(m=>{m.nodes[n.id].plan.type=e.target.value;})}>${PLAN_TYPES.map(p=>html`<option key=${p.v} value=${p.v}>${p.l}</option>`)}</select>
+        ${n.plan.type==='cond'?html`<input type="text" id="in-plantext" placeholder="e.g. Do 1-3. If the earth bonding system fails do 4." value=${n.plan.text} onInput=${e=>mut(m=>{m.nodes[n.id].plan.text=e.target.value;})}/>`:null}</div><//>`:null}
+      ${!isRoot?html`<div class="grid2"><${Field} label="Procedure step no." hint="source in work as imagined"><${Txt} id="in-ref" value=${n.ref} onChange=${v=>set('ref',v)}/><//>
+        <${Field} label="Activity type">${hasK?html`<span class="small faint">Set on the lowest-level steps</span>`:html`<select id="in-act" value=${n.activity} onChange=${e=>set('activity',e.target.value)}><option value="">— choose —</option>${ACTIVITY_TYPES.map(a=>html`<option key=${a.code} value=${a.code}>${a.name}</option>`)}</select>`}<//></div>`:null}
+      <${Field} label="Agent / person"><div class="chips">${st.agents.map(a=>html`<button key=${a.id} class="chip" aria-pressed=${n.agents.includes(a.id)} onClick=${()=>mut(m=>{ const x=m.nodes[n.id]; x.agents = x.agents.includes(a.id)?x.agents.filter(i=>i!==a.id):x.agents.concat([a.id]); })}><span class="swatch" style=${{background:a.color}}></span>${a.abbr||a.name||'role'}</button>`)}${!st.agents.length?html`<span class="small faint">Add roles in stage 1.</span>`:null}</div><//>
+      <div class="grid3"><${Field} label="Where"><select id="in-where" value=${n.where} onChange=${e=>set('where',e.target.value)}><option value="">—</option>${st.locations.map(l=>html`<option key=${l.id} value=${l.id}>${l.name||'(unnamed)'}</option>`)}</select><//>
+        <${Field} label="Start"><input id="in-start" type="text" placeholder="hh:mm:ss" value=${n.start} onInput=${e=>set('start',e.target.value)}/><//><${Field} label="Finish"><input id="in-fin" type="text" placeholder="hh:mm:ss" value=${n.finish} onInput=${e=>set('finish',e.target.value)}/><//></div>
+      ${variant==='wad'&&!isRoot?html`<${Field} label="Links to procedure step" hint="work as imagined"><select id="in-link" value=${n.link||''} onChange=${e=>set('link',e.target.value||null)}><option value="">— not in procedure (added step) —</option>${waiLeaves.map(w=>html`<option key=${w.id} value=${w.id}>${(w.ref||waiNums[w.id])+' '+w.label.slice(0,70)}</option>`)}</select><//>`:null}
+      <${Field} label="Warning" hint="shown in red on the map and in the procedure"><${Txt} id="in-warn" rows="2" value=${n.warnings} onChange=${v=>set('warnings',v)}/><//>
+      <${Field} label="Comments"><${Txt} id="in-com" rows="2" value=${n.comments} onChange=${v=>set('comments',v)}/><//>
+      <div class="grid2"><${Field} label="Tags"><${Txt} id="in-tags" value=${n.tags} onChange=${v=>set('tags',v)} placeholder="comma separated"/><//>
+        <label class="row small" style="align-self:end;gap:6px;font-weight:600;color:var(--ink-2)"><input type="checkbox" id="in-crit" checked=${!!n.critical} onChange=${e=>set('critical',e.target.checked)}/> Critical step</label></div>
+      <${Field} label="Photos and documents"><div class="row">${(n.photos||[]).map(p=>html`<span key=${p.id} style="position:relative;display:inline-block"><img src=${p.data} alt=${p.caption} style="height:64px;border-radius:4px;border:1px solid var(--line)"/><button class="btn sm" style="position:absolute;top:2px;right:2px;padding:0 5px" aria-label="Remove photo" onClick=${()=>mut(m=>{m.nodes[n.id].photos=m.nodes[n.id].photos.filter(x=>x.id!==p.id);})}>✕</button></span>`)}
+        <button class="btn sm" onClick=${()=>fileRef.current.click()}>Add photo</button><input ref=${fileRef} type="file" accept="image/*" hidden onChange=${addPhoto}/></div><//>
+    </div></div>`;
+}
+function MapStage({st,update,ask,notify,ui,setUi}){
+  const variant=ui.variant||'wad'; const view=ui.view||'outline'; const map=st.maps[variant];
+  const [sel,setSel]=useState(map.rootId); const [collapsed,setCollapsed]=useState({}); const [showImport,setShowImport]=useState(false);
+  useEffect(()=>{ if(!map.nodes[sel]) setSel(map.rootId); },[variant,map]);
+  const mut=fn=>update(s=>fn(s.maps[variant]));
+  const waiCount=leavesOf(st.maps.wai).length, wadCount=leavesOf(st.maps.wad).length;
+  const svg=useMemo(()=>view==='diagram'?diagramSVG(st,map,{colorBy:ui.colorBy||'agent',collapsed,sel}):'',[st,map,view,ui.colorBy,collapsed,sel]);
+  const onDiaClick=e=>{ const t=e.target.closest('[data-tog]'); if(t){ const id=t.getAttribute('data-tog'); setCollapsed(c=>Object.assign({},c,{[id]:!c[id]})); return; } const g=e.target.closest('[data-id]'); if(g) setSel(g.getAttribute('data-id')); };
+  const makeWad=()=>{ const go=()=>{ update(s=>{ s.maps.wad=copyMapWithLinks(s.maps.wai); s.analyses=[]; }); setUi({variant:'wad'}); notify('Work-as-done map created. Now walk it through with the operators and change what differs.'); };
+    if(wadCount) ask({title:'Replace the work-as-done map?',body:'The current work-as-done map and all error analysis on it will be replaced by a copy of the procedure.',okLabel:'Replace',danger:true,ok:go}); else go(); };
+  const legend = (ui.colorBy||'agent')==='agent' ? st.agents.map(a=>[a.color,a.abbr||a.name]) : (ui.colorBy==='where') ? st.locations.map(l=>[l.color,l.name]) : ui.colorBy==='activity' ? ACTIVITY_TYPES.map((a,i)=>[PALETTE[i],a.name]) : ui.colorBy==='risk' ? [['var(--hi)','High'],['var(--med)','Medium'],['var(--lo)','Low']] : [];
+  return html`<div style="display:flex;flex-direction:column;gap:14px">
+    <div class="row" style="justify-content:space-between">
+      <div class="seg" role="group" aria-label="Which map"><button aria-pressed=${variant==='wai'} onClick=${()=>setUi({variant:'wai'})}>Work as imagined · ${waiCount}</button><button aria-pressed=${variant==='wad'} onClick=${()=>setUi({variant:'wad'})}>Work as done · ${wadCount}</button></div>
+      <div class="row">
+        ${variant==='wai'?html`<button class="btn" onClick=${()=>setShowImport(!showImport)}>${showImport?'Hide import':'Paste procedure…'}</button>`:null}
+        ${waiCount?html`<button class="btn" onClick=${makeWad}>Copy procedure into work as done</button>`:null}
+        <div class="seg" role="group" aria-label="View"><button aria-pressed=${view==='outline'} onClick=${()=>setUi({view:'outline'})}>Outline</button><button aria-pressed=${view==='diagram'} onClick=${()=>setUi({view:'diagram'})}>Diagram</button></div>
+      </div>
+    </div>
+    <p class="small muted" style="margin:0;max-width:85ch">${variant==='wai'?'Work as imagined: the task as the procedure describes it. Paste it in, keep the step numbers, then copy it into work as done.':'Work as done: the task as the operators actually do it. Regroup steps into tasks and subtasks, set the plan for each task, and record who does each step.'}</p>
+    ${variant==='wai'&&(showImport||!waiCount)?html`<${ImportPanel} st=${st} update=${update} notify=${notify} ask=${ask} onDone=${()=>{setShowImport(false); notify('Procedure imported as work as imagined');}}/>`:null}
+    <div class="split wide-left">
+      <div class="panel" style="overflow:hidden">
+        ${view==='outline'?html`<${Outline} st=${st} map=${map} variant=${variant} sel=${sel} setSel=${setSel} mut=${mut} collapsed=${collapsed} setCollapsed=${setCollapsed}/>`
+          :html`<div class="toolbar"><label class="row small" style="gap:6px">Colour by <select id="dia-color" style="width:auto" value=${ui.colorBy||'agent'} onChange=${e=>setUi({colorBy:e.target.value})}><option value="agent">Agent/Person</option><option value="risk">Risk</option><option value="where">Where</option><option value="activity">Activity type</option><option value="none">None</option></select></label>
+              <div class="legend">${legend.map(([c,l],i)=>html`<span key=${i} class="row" style="gap:4px"><span class="swatch" style=${{background:c}}></span>${l}</span>`)}</div><span class="grow"></span>
+              <button class="btn sm" onClick=${()=>setCollapsed({})}>Expand all</button><button class="btn sm" onClick=${()=>{ const c={}; map.nodes[map.rootId].children.forEach(id=>{ if(map.nodes[id].children.length) c[id]=true; }); setCollapsed(c); }}>Collapse to tasks</button></div>
+            <div class="diagram-wrap" onClick=${onDiaClick} dangerouslySetInnerHTML=${{__html:svg}}></div>`}
+      </div>
+      <${Inspector} st=${st} map=${map} variant=${variant} sel=${sel} mut=${mut} update=${update} ask=${ask} setSel=${setSel}/>
+    </div></div>`;
+}
+
+/* ===================== Stage 3: Compare ===================== */
+const GAP_REASONS=['Procedure out of date','Local practice','Equipment changed','Shortcut taken','Step merged or split','Not done in practice','Role differs in practice','Other'];
+const GAP_DECISIONS=['Adopt work as done in procedure','Keep procedure, retrain','Revise both','No action needed'];
+function Compare({st,update}){
+  const rows=useMemo(()=>compareMaps(st),[st.maps]); const [f,setF]=useState('All');
+  const kinds=['Added','Missing','Moved','Re-assigned','Re-worded','Split'];
+  const count=k=>rows.filter(r=>r.kind.includes(k)).length;
+  if(!leavesOf(st.maps.wai).length) return html`<div class="panel"><div class="empty">There is no work-as-imagined map yet. Paste the procedure in stage 2 to compare it with work as done.</div></div>`;
+  const shown=rows.filter(r=>f==='All'||r.kind.includes(f));
+  return html`<div style="display:flex;flex-direction:column;gap:14px">
+    <div class="kpis">${kinds.map(k=>html`<button key=${k} class="kpi" style="text-align:left;cursor:pointer;${f===k?'border-color:var(--accent)':''}" onClick=${()=>setF(f===k?'All':k)}><b>${count(k)}</b><span>${k}</span></button>`)}</div>
+    <p class="small muted" style="margin:0;max-width:90ch">Each row is a difference between the procedure and how the task is really done. Record why it differs and which version should become the standard. Steps marked Split or Re-worded are often fine; Missing and Added steps usually need a decision.</p>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Difference</th><th>Procedure (WAI)</th><th>Work as done (WAD)</th><th style="min-width:170px">Why</th><th style="min-width:190px">Decision</th></tr></thead><tbody>
+      ${shown.map(r=>{ const g=st.gaps[r.key]||{}; const setG=(k,v)=>update(s=>{ s.gaps[r.key]=Object.assign({},s.gaps[r.key]||{},{[k]:v}); });
+        return html`<tr key=${r.key}><td>${r.kind.split(', ').map(k=>html`<span key=${k} class=${'pill '+(k==='Missing'||k==='Added'?'sig':'acc')} style="margin:0 4px 4px 0">${k}</span>`)}</td>
+          <td class="small">${r.wai?html`<span class="code">${r.wai.ref||r.waiNum}</span> ${r.wai.label}<div class="faint">${agentLabel(st,r.wai.agents)}</div>`:html`<span class="faint">—</span>`}</td>
+          <td class="small">${r.wad?html`<span class="code">${r.wadNum}</span> ${r.wad.label}<div class="faint">${agentLabel(st,r.wad.agents)}</div>`:html`<span class="faint">not done as a step</span>`}</td>
+          <td><select id=${'gr-'+r.key} value=${g.reason||''} onChange=${e=>setG('reason',e.target.value)}><option value="">—</option>${GAP_REASONS.map(x=>html`<option key=${x}>${x}</option>`)}</select><input type="text" id=${'gn-'+r.key} placeholder="Note" style="margin-top:4px" value=${g.note||''} onInput=${e=>setG('note',e.target.value)}/></td>
+          <td><select id=${'gd-'+r.key} value=${g.decision||''} onChange=${e=>setG('decision',e.target.value)}><option value="">— decide —</option>${GAP_DECISIONS.map(x=>html`<option key=${x}>${x}</option>`)}</select></td></tr>`; })}
+      ${!shown.length?html`<tr><td colspan="5" class="empty">No differences of this kind.</td></tr>`:null}
+    </tbody></table></div></div>`;
+}
+
+/* ===================== Stage 4: Screen ===================== */
+function Screen({st,update}){
+  const wad=st.maps.wad; const nums=numbering(wad); const top=wad.nodes[wad.rootId].children;
+  const leaves=leavesOf(wad); const c=r=>leaves.filter(n=>n.risk===r).length;
+  const setN=(id,k,v)=>update(s=>{ s.maps.wad.nodes[id][k]=v; });
+  if(!leaves.length) return html`<div class="panel"><div class="empty">Build the work-as-done map first (stage 2).</div></div>`;
+  const rowsFor=tid=>{ const out=[]; const go=id=>{ const n=wad.nodes[id]; if(!n.children.length) out.push(n); n.children.forEach(go); }; go(tid); return out; };
+  return html`<div style="display:flex;flex-direction:column;gap:14px">
+    <div class="kpis"><div class="kpi"><b style="color:var(--hi)">${c(3)}</b><span>High</span></div><div class="kpi"><b style="color:var(--med)">${c(2)}</b><span>Medium</span></div><div class="kpi"><b style="color:var(--lo)">${c(1)}</b><span>Low</span></div><div class="kpi"><b>${c(0)}</b><span>Not screened</span></div></div>
+    <p class="small muted" style="margin:0;max-width:90ch">Rate each step by what could happen if it went wrong. High and Medium steps go forward to error prediction; Low steps can still be opened later. Mark steps critical to highlight them in the procedure and competence sheet.</p>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>No.</th><th>Step</th><th>A/P</th><th>Risk</th><th style="min-width:220px">Reason</th><th>Critical</th></tr></thead><tbody>
+      ${top.map(tid=>{ const t=wad.nodes[tid]; const rs=rowsFor(tid);
+        return html`<${React.Fragment} key=${tid}><tr><td class="num"><b>${nums[tid]}</b></td><td colspan="5"><b>${t.label}</b></td></tr>
+          ${rs.filter(n=>n.id!==tid||true).map(n=>html`<tr key=${n.id}><td class="num">${nums[n.id]}</td><td class="small">${n.label}${n.warnings?html` <span class="pill hi" title=${n.warnings}>!</span>`:null}</td><td class="small">${agentLabel(st,n.agents)}</td>
+            <td><div class="seg risk" role="group" aria-label="Risk">${[[3,'H'],[2,'M'],[1,'L']].map(([v,l])=>html`<button key=${v} data-v=${v} aria-pressed=${n.risk===v} title=${riskName(v)} onClick=${()=>setN(n.id,'risk',n.risk===v?0:v)}>${l}</button>`)}</div></td>
+            <td><input type="text" id=${'rr-'+n.id} value=${n.riskReason} placeholder=${n.risk>=2?'Why this rating?':''} onInput=${e=>setN(n.id,'riskReason',e.target.value)}/></td>
+            <td style="text-align:center"><input type="checkbox" aria-label="Critical step" checked=${!!n.critical} onChange=${e=>setN(n.id,'critical',e.target.checked)}/></td></tr>`)}<//>`; })}
+    </tbody></table></div></div>`;
+}
+
+/* ===================== Stage 5: Errors ===================== */
+function newAnalysis(nodeId,mode){ return {id:uid('e'),nodeId,mode,errorDesc:'',errorType:'',consequence:'',consTypes:[],controls:'',recovery:'',credible:true,notCredibleReason:'',notes:'',designReq:'',verifReq:'',pifNotes:'',pifs:[],improvements:[]}; }
+function StepList({st,items,cur,setCur,extra}){
+  const nums=numbering(st.maps.wad);
+  return html`<div class="panel"><div class="list">${items.map(n=>html`<button key=${n.id} class="li" aria-current=${n.id===cur} onClick=${()=>setCur(n.id)}><span class="n">${nums[n.id]}</span><span class="small">${n.label}</span><span>${extra?extra(n):html`<${RiskPill} r=${n.risk}/>`}</span></button>`)}
+    ${!items.length?html`<div class="empty small">No steps here yet.</div>`:null}</div></div>`;
+}
+function Errors({st,update,ask,notify,ui,setUi}){
+  const wad=st.maps.wad; const nums=numbering(wad); const [showLow,setShowLow]=useState(false);
+  const items=leavesOf(wad).filter(n=>showLow?true:n.risk>=2);
+  const cur=ui.errStep&&wad.nodes[ui.errStep]?ui.errStep:items[0]?.id; const n=wad.nodes[cur];
+  const sample=useCap('sample'); const [busy,setBusy]=useState(false); const [sugg,setSugg]=useState(null);
+  const ans=st.analyses.filter(a=>a.nodeId===cur);
+  const design = st.meta.studyType==='Design review' || ans.some(a=>a.designReq||a.verifReq) || ui.showDesign;
+  const toggleMode=code=>{ const ex=ans.find(a=>a.mode===code);
+    if(ex){ const has=ex.errorDesc||ex.consequence||(ex.pifs||[]).length; const go=()=>update(s=>{ s.analyses=s.analyses.filter(a=>a.id!==ex.id); }); if(has) ask({title:'Remove '+code+'?',body:'This error mode has details, PIF ratings or improvements. Removing it deletes them.',okLabel:'Remove',danger:true,ok:go}); else go(); }
+    else update(s=>{ s.analyses.push(newAnalysis(cur,code)); }); };
+  const setA=(id,k,v)=>update(s=>{ const a=s.analyses.find(x=>x.id===id); if(a) a[k]=v; });
+  const suggest=async()=>{ if(!sample||!n) return; setBusy(true); setSugg(null);
+    try{ const parent=wad.nodes[n.parent]; const modes=ERROR_MODES.filter(m=>!n.activity||m.a===n.activity);
+      const prompt=`You are a human factors specialist running a SHERPA (Systematic Human Error Reduction and Prediction Approach) analysis.\nTask goal: ${wad.nodes[wad.rootId].label}\nParent task: ${parent?.label||''}\nStep ${nums[n.id]}: ${n.label}\nPerformed by: ${agentNames(st,n.agents)||'unknown'}\nActivity type: ${n.activity||'not set'}\nWarnings/comments: ${n.warnings||''} ${n.comments||''}\nChoose the credible error modes for this step ONLY from this list (code: name): ${modes.map(m=>m.code+': '+m.name).join('; ')}.\nReturn JSON {"modes":[{"code":"...","errorDesc":"short description of the error in plain words","consequence":"what could happen","errorType":"Slip|Lapse|Mistake|Non-compliance"}]} with at most 4 entries, most credible first.`;
+      const r=await sample.json(prompt,{modelTier:'default'}); const list=(r&&r.modes||[]).filter(x=>modeOf(x.code)); setSugg(list); if(!list.length) notify('No suggestions came back'); }
+    catch(e){ notify(e&&e.code==='not_granted'?'AI suggestions were not allowed in this view':'AI suggestions are not available right now'); }
+    setBusy(false); };
+  const addSugg=x=>{ if(ans.find(a=>a.mode===x.code)) return; update(s=>{ const a=newAnalysis(cur,x.code); a.errorDesc=x.errorDesc||''; a.consequence=x.consequence||''; a.errorType=ERROR_TYPES.some(t=>t.v===x.errorType)?x.errorType:''; a.notes='AI-proposed: review before relying on it'; s.analyses.push(a); if(!s.maps.wad.nodes[cur].activity) s.maps.wad.nodes[cur].activity=modeOf(x.code).a; }); };
+  return html`<div class="split list-left">
+    <div style="display:flex;flex-direction:column;gap:8px;min-width:0"><label class="row small"><input type="checkbox" checked=${showLow} onChange=${e=>setShowLow(e.target.checked)}/> Include Low and unscreened steps</label>
+      <${StepList} st=${st} items=${items} cur=${cur} setCur=${id=>{setUi({errStep:id}); setSugg(null);}} extra=${x=>{ const k=st.analyses.filter(a=>a.nodeId===x.id).length; return html`<span class="row" style="gap:4px;flex-wrap:nowrap">${k?html`<span class="code">${k}</span>`:null}<${RiskPill} r=${x.risk}/></span>`; }}/></div>
+    ${!n?html`<div class="panel"><div class="empty">No Medium or High steps yet. Screen the steps in stage 4, or include Low steps.</div></div>`:html`<div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+      <div class="panel"><div class="panel-h"><div><div class="eyebrow">Step ${nums[n.id]} · ${agentLabel(st,n.agents)||'no role'}</div><h3>${n.label}</h3></div><${RiskPill} r=${n.risk}/></div>
+        <div class="panel-b">
+          ${n.warnings?html`<div class="notice small"><b>Warning on this step:</b> ${n.warnings}</div>`:null}
+          <div class="row"><${Field} label="Activity type" style=${{minWidth:'220px'}}><select id="er-act" value=${n.activity} onChange=${e=>update(s=>{s.maps.wad.nodes[cur].activity=e.target.value;})}><option value="">— choose what the person is doing —</option>${ACTIVITY_TYPES.map(a=>html`<option key=${a.code} value=${a.code}>${a.name} — ${a.desc}</option>`)}</select><//>
+            ${sample?html`<button class="btn" style="align-self:end" disabled=${busy} onClick=${suggest}>${busy?'Asking Claude…':'Suggest error modes'}</button>`:null}</div>
+          ${sugg&&sugg.length?html`<div class="card"><div class="card-h"><b>Suggested error modes</b><span class="pill acc">AI-proposed</span><span class="small faint">Review each before adding.</span></div>
+            ${sugg.map(x=>html`<div key=${x.code} class="row" style="align-items:flex-start;flex-wrap:nowrap"><span class="code">${x.code}</span><div class="grow small"><b>${modeOf(x.code).name}</b> — ${x.errorDesc}<div class="faint">${x.consequence}</div></div><button class="btn sm" disabled=${!!ans.find(a=>a.mode===x.code)} onClick=${()=>addSugg(x)}>${ans.find(a=>a.mode===x.code)?'Added':'Add'}</button></div>`)}</div>`:null}
+          ${n.activity?html`<div><div class="eyebrow" style="margin-bottom:6px">How could this step go wrong? Tick each credible error mode</div>
+            <div style="display:flex;flex-direction:column;gap:2px">${ERROR_MODES.filter(m=>m.a===n.activity).map(m=>{ const on=!!ans.find(a=>a.mode===m.code);
+              return html`<label key=${m.code} class="row" style="align-items:flex-start;flex-wrap:nowrap;padding:5px 6px;border-radius:5px;background:${on?'var(--accent-soft)':'transparent'};cursor:pointer"><input type="checkbox" checked=${on} onChange=${()=>toggleMode(m.code)} style="margin-top:3px"/><span class="code">${m.code}</span><span class="small"><b>${m.name}</b>${!m.demo?html` <span class="faint">(assumed code)</span>`:null}<br/><span class="muted">${m.q}</span></span></label>`; })}</div></div>`
+            :html`<div class="notice info small">Choose the activity type first. It decides which error modes apply.</div>`}
+          ${!ans.length?html`<label class="row small" style="align-items:flex-start;flex-wrap:nowrap"><input type="checkbox" checked=${!!n.noneCredible} onChange=${e=>update(s=>{s.maps.wad.nodes[cur].noneCredible=e.target.checked;})}/> <span>No credible error mode for this step${n.noneCredible?html`<input type="text" id="er-none" placeholder="Reason, e.g. interlock prevents the step being skipped" value=${n.noneReason||''} onInput=${e=>update(s=>{s.maps.wad.nodes[cur].noneReason=e.target.value;})} style="margin-top:4px"/>`:null}</span></label>`:null}
+        </div></div>
+      ${ans.map(a=>{ const m=modeOf(a.mode)||{name:a.mode};
+        return html`<div class="card" key=${a.id}><div class="card-h"><span class="code">${a.mode}</span><b>${m.name}</b><span class="grow"></span>
+            <label class="row small" style="gap:4px"><input type="checkbox" checked=${a.credible} onChange=${e=>setA(a.id,'credible',e.target.checked)}/> Credible</label></div>
+          ${!a.credible?html`<${Field} label="Why it is not credible"><${Txt} id=${'nc-'+a.id} value=${a.notCredibleReason} onChange=${v=>setA(a.id,'notCredibleReason',v)}/><//>`:html`
+          <div class="grid2"><${Field} label="Error description" hint="what the person does wrong"><${Txt} id=${'ed-'+a.id} rows="2" value=${a.errorDesc} onChange=${v=>setA(a.id,'errorDesc',v)}/><//>
+            <${Field} label="Consequences"><${Txt} id=${'co-'+a.id} rows="2" value=${a.consequence} onChange=${v=>setA(a.id,'consequence',v)}/><//></div>
+          <${Field} label="Error type"><div class="seg" role="group">${ERROR_TYPES.map(t=>html`<button key=${t.v} aria-pressed=${a.errorType===t.v} title=${t.d} onClick=${()=>setA(a.id,'errorType',a.errorType===t.v?'':t.v)}>${t.v}</button>`)}</div>${a.errorType?html`<span class="hint">${ERROR_TYPES.find(t=>t.v===a.errorType).d}</span>`:null}<//>
+          <${Field} label="Consequence type"><div class="chips">${CONSEQUENCE_TYPES.map(c=>html`<button key=${c} class="chip" aria-pressed=${(a.consTypes||[]).includes(c)} onClick=${()=>setA(a.id,'consTypes',(a.consTypes||[]).includes(c)?a.consTypes.filter(x=>x!==c):(a.consTypes||[]).concat([c]))}>${c}</button>`)}</div><//>
+          <div class="grid2"><${Field} label="Existing risk control measures"><${Txt} id=${'ec-'+a.id} rows="2" value=${a.controls} onChange=${v=>setA(a.id,'controls',v)} placeholder="e.g. Alarm, bund, ESD"/><//>
+            <${Field} label="Recovery" hint="how the error would be noticed and put right"><${Txt} id=${'rc-'+a.id} rows="2" value=${a.recovery} onChange=${v=>setA(a.id,'recovery',v)}/><//></div>
+          ${design?html`<div class="grid2"><${Field} label="Design requirement"><${Txt} id=${'dr-'+a.id} rows="2" value=${a.designReq} onChange=${v=>setA(a.id,'designReq',v)}/><//><${Field} label="Verification / validation requirement"><${Txt} id=${'vr-'+a.id} rows="2" value=${a.verifReq} onChange=${v=>setA(a.id,'verifReq',v)}/><//></div>`:null}
+          <${Field} label="Analyst notes"><${Txt} id=${'an-'+a.id} value=${a.notes} onChange=${v=>setA(a.id,'notes',v)}/><//>`}
+        </div>`; })}
+      ${ans.length&&!design?html`<div><button class="btn sm ghost" onClick=${()=>setUi({showDesign:true})}>Show design and verification requirement fields</button></div>`:null}
+    </div>`}
+  </div>`;
+}
+
+/* ===================== Stage 6: PIFs ===================== */
+function Scale({value,onChange,small}){ return html`<div class="scale" role="group" aria-label="Rating">${RATING.map(r=>html`<button key=${r.v} data-v=${r.v} aria-pressed=${value===r.v} onClick=${()=>onChange(r.v)} title=${r.h}><b>${r.v}</b>${small?null:html`${r.l}<br/><span class="faint">${r.h}</span>`}</button>`)}</div>`; }
+function credibleList(st){ const wad=st.maps.wad; const ord=Object.fromEntries(leavesOf(wad).map((n,i)=>[n.id,i])); return st.analyses.filter(a=>a.credible&&wad.nodes[a.nodeId]).sort((a,b)=>(ord[a.nodeId]-ord[b.nodeId])||a.mode.localeCompare(b.mode)); }
+function AnList({st,list,cur,setCur,right}){
+  const nums=numbering(st.maps.wad);
+  return html`<div class="panel"><div class="list">${list.map(a=>{ const n=st.maps.wad.nodes[a.nodeId]; return html`<button key=${a.id} class="li" aria-current=${a.id===cur} onClick=${()=>setCur(a.id)}><span class="n">${nums[n.id]}</span><span class="small"><span class="code">${a.mode}</span> ${modeOf(a.mode)?.name||''}<br/><span class="faint">${n.label.slice(0,70)}</span></span><span>${right(a,n)}</span></button>`; })}
+    ${!list.length?html`<div class="empty small">No credible error modes yet. Add them in stage 5.</div>`:null}</div></div>`;
+}
+function Pifs({st,update,ui,setUi}){
+  const list=credibleList(st); const mode=st.meta.ratingMode; const [showAll,setShowAll]=useState(false); const [custom,setCustom]=useState({name:'',st:''});
+  const cur=ui.pifAn&&list.find(a=>a.id===ui.pifAn)?ui.pifAn:list[0]?.id; const a=list.find(x=>x.id===cur);
+  const nums=numbering(st.maps.wad);
+  const upd=fn=>update(s=>{ const x=s.analyses.find(y=>y.id===cur); if(x) fn(x); });
+  if(!a) return html`<${AnList} st=${st} list=${list} cur=${cur} setCur=${()=>{}} right=${()=>null}/>`;
+  const n=st.maps.wad.nodes[a.nodeId]; const act=modeOf(a.mode)?.a; const attached=new Set(a.pifs.map(p=>p.pifId));
+  const avail=PIFS.filter(p=>showAll||p.a.includes(act));
+  const togglePif=p=>upd(x=>{ if(x.pifs.find(q=>q.pifId===p.id)) x.pifs=x.pifs.filter(q=>q.pifId!==p.id); else x.pifs.push({id:uid('p'),pifId:p.id,name:p.name,statement:p.st,baseline:50,modified:null,reason:'',weight:1}); });
+  const b=anScore(a,'baseline',mode);
+  return html`<div class="split list-left">
+    <${AnList} st=${st} list=${list} cur=${cur} setCur=${id=>setUi({pifAn:id})} right=${x=>html`<${Meter} v=${anScore(x,'baseline',mode)}/>`}/>
+    <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+      <div class="panel"><div class="panel-h"><div><div class="eyebrow">Step ${nums[n.id]} · ${n.label.slice(0,90)}</div><h3><span class="code">${a.mode}</span> ${modeOf(a.mode)?.name}</h3></div><div class="row"><span class="small muted">Error-mode score</span><${Meter} v=${b}/></div></div>
+        <div class="panel-b">
+          ${a.errorDesc?html`<div class="small"><b>Error:</b> ${a.errorDesc}${a.consequence?html` · <b>Consequence:</b> ${a.consequence}`:null}</div>`:null}
+          <${Field} label="Why could this error happen here?" hint="free notes from the discussion, e.g. –ve Proximity: ESD is located nearby"><${Txt} id="pf-notes" rows="2" value=${a.pifNotes} onChange=${v=>upd(x=>{x.pifNotes=v;})}/><//>
+          <div><div class="row" style="justify-content:space-between;margin-bottom:6px"><span class="eyebrow">Choose the PIFs that apply</span><label class="row small"><input type="checkbox" checked=${showAll} onChange=${e=>setShowAll(e.target.checked)}/> Show all PIFs</label></div>
+            <div class="chips">${avail.map(p=>html`<button key=${p.id} class="chip" aria-pressed=${attached.has(p.id)} onClick=${()=>togglePif(p)} title=${p.st}>${p.name}</button>`)}</div></div>
+          <div class="row" style="flex-wrap:nowrap"><input type="text" id="pf-cn" placeholder="Own PIF name" value=${custom.name} onInput=${e=>setCustom(Object.assign({},custom,{name:e.target.value}))} style="max-width:200px"/><input type="text" id="pf-cs" placeholder="Statement, written as the adverse condition" value=${custom.st} onInput=${e=>setCustom(Object.assign({},custom,{st:e.target.value}))}/>
+            <button class="btn sm" disabled=${!custom.name.trim()} onClick=${()=>{ upd(x=>{ x.pifs.push({id:uid('p'),pifId:'custom',name:custom.name.trim(),statement:custom.st.trim()||custom.name.trim(),baseline:50,modified:null,reason:'',weight:1}); }); setCustom({name:'',st:''}); }}>Add</button></div>
+        </div></div>
+      ${a.pifs.map((p,i)=>{ const lib=PIF[p.pifId]; const setP=(k,v)=>upd(x=>{ x.pifs[i][k]=v; });
+        return html`<div key=${p.id} class=${'card'+(p.baseline>=75?' flag':'')}>
+          <div class="card-h"><b>${p.name}</b>${p.baseline>=75?html`<span class="pill sig">flagged for improvement</span>`:null}<span class="grow"></span>
+            ${mode==='enhanced'?html`<label class="row small" style="gap:4px">Weight <select id=${'pw-'+p.id} style="width:auto" value=${p.weight||1} onChange=${e=>setP('weight',+e.target.value)}><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></label>`:null}
+            <button class="btn sm ghost danger" onClick=${()=>upd(x=>{x.pifs.splice(i,1);})}>Remove</button></div>
+          <${Field} label="Statement" hint="agree = worse"><${Txt} id=${'ps-'+p.id} value=${p.statement} onChange=${v=>setP('statement',v)}/><//>
+          <${Scale} value=${p.baseline} onChange=${v=>setP('baseline',v)}/>
+          ${lib?html`<details><summary class="small muted" style="cursor:pointer">Guidance</summary><p class="small muted" style="margin:6px 0 0">${lib.g}</p></details>`:null}
+          <${Field} label=${'Reason for rating'+(p.baseline!==50?' (required)':'')}><${Txt} id=${'pr-'+p.id} value=${p.reason} onChange=${v=>setP('reason',v)} placeholder=${p.baseline!==50?'What did the team see or hear that supports this rating?':'Optional at industry norm'}/><//>
+        </div>`; })}
+      ${!a.pifs.length?html`<div class="notice info small">Pick at least three PIFs above, then rate each statement. Start with the conditions the operators mentioned.</div>`:null}
+    </div></div>`;
+}
+
+/* ===================== Stage 7: Controls ===================== */
+function Controls({st,update,notify,ui,setUi}){
+  const mode=st.meta.ratingMode; const nums=numbering(st.maps.wad); const sample=useCap('sample'); const [busy,setBusy]=useState(false); const [sugg,setSugg]=useState(null);
+  const all=credibleList(st); const list=all.filter(a=>flaggedPifs(a).length||(a.improvements||[]).length).sort((x,y)=>(priorityOf(x,st.maps.wad.nodes[x.nodeId],mode)||9)-(priorityOf(y,st.maps.wad.nodes[y.nodeId],mode)||9));
+  const cur=ui.ctlAn&&list.find(a=>a.id===ui.ctlAn)?ui.ctlAn:list[0]?.id; const a=list.find(x=>x.id===cur);
+  const imps=all.flatMap(x=>(x.improvements||[]).map(i=>({i,a:x}))); const byStatus=s=>imps.filter(x=>x.i.status===s).length;
+  const pri=k=>all.filter(x=>priorityOf(x,st.maps.wad.nodes[x.nodeId],mode)===k).length;
+  const upd=fn=>update(s=>{ const x=s.analyses.find(y=>y.id===cur); if(x) fn(x); });
+  const addImp=(text,level,pifIds,source,status)=>upd(x=>{ x.improvements=x.improvements||[]; x.improvements.push({id:uid('i'),text,level,pifIds,owner:'',due:'',status:status||'Accepted',verification:'',source}); });
+  const kpis=html`<div class="kpis"><div class="kpi"><b style="color:var(--hi)">${pri(1)}</b><span>Priority 1</span></div><div class="kpi"><b style="color:var(--med)">${pri(2)}</b><span>Priority 2</span></div><div class="kpi"><b>${pri(3)}</b><span>Priority 3</span></div>
+    <div class="kpi"><b>${byStatus('Proposed')+byStatus('Accepted')}</b><span>Open improvements</span></div><div class="kpi"><b>${byStatus('Done')+byStatus('Verified')}</b><span>Done or verified</span></div></div>`;
+  if(!a) return html`<div style="display:flex;flex-direction:column;gap:14px">${kpis}<div class="panel"><div class="empty">No PIFs are rated 75 or 100 yet, so there is nothing flagged for improvement. Rate PIFs in stage 6.</div></div></div>`;
+  const n=st.maps.wad.nodes[a.nodeId]; const fl=flaggedPifs(a); const p=priorityOf(a,n,mode);
+  const suggest=async()=>{ if(!sample) return; setBusy(true); setSugg(null);
+    try{ const prompt=`You are a human factors specialist recommending controls in a SHERPA study (high-hazard industry).\nTask: ${st.maps.wad.nodes[st.maps.wad.rootId].label}\nStep ${nums[n.id]}: ${n.label}\nError mode ${a.mode} ${modeOf(a.mode)?.name}: ${a.errorDesc}\nConsequence: ${a.consequence}\nExisting controls: ${a.controls||'none recorded'}\nPIFs rated worse than industry norm: ${fl.map(q=>`[${q.id}] ${q.name}: "${q.statement}" rated ${q.baseline}/100 because ${q.reason||'n/a'}`).join('; ')}\nPropose up to 5 specific, practical improvements that make correct performance easier, strongest control type first. Control level must be one of ${CONTROL_LEVELS.map(l=>l.k+'='+l.name).join(', ')}.\nReturn JSON {"improvements":[{"text":"...","level":"ENG","pifId":"<id in brackets above>"}]}.`;
+      const r=await sample.json(prompt,{modelTier:'default'}); const out=(r&&r.improvements||[]).filter(x=>x.text&&LEVEL[x.level]); setSugg(out); if(!out.length) notify('No suggestions came back'); }
+    catch(e){ notify(e&&e.code==='not_granted'?'AI suggestions were not allowed in this view':'AI suggestions are not available right now'); }
+    setBusy(false); };
+  return html`<div style="display:flex;flex-direction:column;gap:14px">${kpis}
+    <div class="split list-left">
+      <${AnList} st=${st} list=${list} cur=${cur} setCur=${id=>{setUi({ctlAn:id}); setSugg(null);}} right=${(x,nn)=>html`<${PriPill} p=${priorityOf(x,nn,mode)}/>`}/>
+      <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+        <div class="panel"><div class="panel-h"><div><div class="eyebrow">Step ${nums[n.id]} · ${riskName(n.risk)} risk</div><h3><span class="code">${a.mode}</span> ${modeOf(a.mode)?.name}</h3></div>
+          <div class="row"><${PriPill} p=${p}/><span class="small muted">Baseline</span><${Meter} v=${anScore(a,'baseline',mode)}/><span class="small muted">Modified</span><${Meter} v=${anScore(a,'modified',mode)}/></div></div>
+          <div class="panel-b"><div class="small">${a.errorDesc?html`<b>Error:</b> ${a.errorDesc}. `:null}${a.consequence?html`<b>Consequence:</b> ${a.consequence}. `:null}${a.controls?html`<b>Existing controls:</b> ${a.controls.replace(/\n/g,', ')}`:null}</div>
+            ${sample?html`<div><button class="btn" disabled=${busy} onClick=${suggest}>${busy?'Asking Claude…':'Suggest improvements'}</button></div>`:null}
+            ${sugg&&sugg.length?html`<div class="card"><div class="card-h"><b>Suggested improvements</b><span class="pill acc">AI-proposed</span></div>${sugg.map((x,i)=>{ const pp=a.pifs.find(q=>q.id===x.pifId); return html`<div key=${i} class="row" style="flex-wrap:nowrap;align-items:flex-start"><span class="pill acc">${LEVEL[x.level].name}</span><span class="grow small">${x.text}${pp?html` <span class="faint">(${pp.name})</span>`:null}</span><button class="btn sm" onClick=${()=>addImp(x.text,x.level,pp?[pp.id]:[],'AI-proposed','Proposed')}>Add</button></div>`; })}</div>`:null}
+          </div></div>
+        ${fl.map(q=>{ const lib=PIF[q.pifId]; const tmpl=(lib?lib.c:[]).slice().sort((x,y)=>LEVEL[x[0]].rank-LEVEL[y[0]].rank); const has=(a.improvements||[]).filter(i=>(i.pifIds||[]).includes(q.id)&&i.status!=='Rejected');
+          const existing = a.controls && lib && tmpl.some(([,t])=>a.controls.toLowerCase().split(/\W+/).some(w=>w.length>3&&t.toLowerCase().includes(w)));
+          return html`<div class="card flag" key=${q.id}><div class="card-h"><b>${q.name}</b><span class="pill hi">${q.baseline}</span><span class="small muted">"${q.statement}"</span></div>
+            ${q.reason?html`<div class="small faint">Reason: ${q.reason}</div>`:null}
+            ${existing?html`<div class="notice info small">An existing control may already address this PIF. Confirm it works before adding a new one.</div>`:null}
+            <div class="eyebrow">Controls to consider, strongest first</div>
+            ${tmpl.map(([lv,t],i)=>{ const added=(a.improvements||[]).some(x=>x.text===t); return html`<div key=${i} class="row" style="flex-wrap:nowrap;align-items:flex-start"><span class="pill acc" style="min-width:150px;justify-content:center">${LEVEL[lv].name}</span><span class="grow small">${t}</span><button class="btn sm" disabled=${added} onClick=${()=>addImp(t,lv,[q.id],'Library')}>${added?'Added':'Add'}</button></div>`; })}
+            ${!has.length?html`<${Field} label="Or record why no improvement is needed"><input type="text" id=${'nr-'+q.id} value=${q.noControlReason||''} onInput=${e=>upd(x=>{ const y=x.pifs.find(z=>z.id===q.id); y.noControlReason=e.target.value; })}/><//>`:null}
+          </div>`; })}
+        <div class="panel"><div class="panel-h"><h3>Agreed improvements</h3><button class="btn sm" onClick=${()=>addImp('','PROC',[], 'Analyst')}>Add own improvement</button></div><div class="panel-b">
+          ${(a.improvements||[]).map((im,i)=>{ const setI=(k,v)=>upd(x=>{ x.improvements[i][k]=v; });
+            return html`<div key=${im.id} class="card"><div class="row" style="flex-wrap:nowrap;align-items:flex-start"><textarea id=${'it-'+im.id} rows="2" value=${im.text} placeholder="Describe the improvement" onInput=${e=>setI('text',e.target.value)}></textarea><button class="btn sm ghost danger" onClick=${()=>upd(x=>{x.improvements.splice(i,1);})} aria-label="Remove improvement">✕</button></div>
+              <div class="grid3"><${Field} label="Control level"><select id=${'il-'+im.id} value=${im.level} onChange=${e=>setI('level',e.target.value)}>${CONTROL_LEVELS.map(l=>html`<option key=${l.k} value=${l.k}>${l.name}</option>`)}</select><//>
+                <${Field} label="Owner"><input type="text" id=${'io-'+im.id} value=${im.owner} onInput=${e=>setI('owner',e.target.value)}/><//><${Field} label="Due date"><input type="date" id=${'id-'+im.id} value=${im.due} onInput=${e=>setI('due',e.target.value)}/><//></div>
+              <div class="grid2"><${Field} label="Status"><select id=${'is-'+im.id} value=${im.status} onChange=${e=>setI('status',e.target.value)}>${['Proposed','Accepted','Rejected','Done','Verified'].map(s=>html`<option key=${s}>${s}</option>`)}</select><//><${Field} label="How it will be verified"><input type="text" id=${'iv-'+im.id} value=${im.verification} onInput=${e=>setI('verification',e.target.value)}/><//></div>
+              <${Field} label="PIFs it improves"><div class="chips">${a.pifs.map(pp=>html`<button key=${pp.id} class="chip" aria-pressed=${(im.pifIds||[]).includes(pp.id)} onClick=${()=>setI('pifIds',(im.pifIds||[]).includes(pp.id)?im.pifIds.filter(z=>z!==pp.id):(im.pifIds||[]).concat([pp.id]))}>${pp.name}</button>`)}</div><//>
+              ${im.source&&im.source!=='Analyst'?html`<div class="small faint">Source: ${im.source}</div>`:null}</div>`; })}
+          ${!(a.improvements||[]).length?html`<div class="small faint">No improvements yet. Add one from the suggestions above.</div>`:null}
+        </div></div>
+        <div class="panel"><div class="panel-h"><h3>Expected PIF ratings after improvements</h3><span class="small muted">Modified score ${anScore(a,'modified',mode)??'—'}</span></div><div class="panel-b">
+          ${a.pifs.map((pp,i)=>html`<div key=${pp.id} class="row" style="flex-wrap:nowrap;align-items:center"><div style="min-width:160px;max-width:200px" class="small"><b>${pp.name}</b><br/><span class="faint">baseline ${pp.baseline}</span></div><div class="grow"><${Scale} small=${true} value=${pp.modified==null?pp.baseline:pp.modified} onChange=${v=>upd(x=>{x.pifs[i].modified=v;})}/></div></div>`)}
+        </div></div>
+      </div></div></div>`;
+}
+
+/* ===================== Output models ===================== */
+function procedureModel(st,opt){
+  const wad=st.maps.wad; const nums=numbering(wad); const root=wad.nodes[wad.rootId];
+  const anBy={}; st.analyses.filter(a=>a.credible).forEach(a=>{ (anBy[a.nodeId]=anBy[a.nodeId]||[]).push(a); });
+  const sections=root.children.map(tid=>{ const t=wad.nodes[tid]; const rows=[];
+    const go=(id,d)=>{ const n=wad.nodes[id]; const com=[]; if(n.comments) com.push(n.comments);
+      if(opt.errors) (anBy[id]||[]).forEach(a=>{ if(a.errorDesc||a.consequence) com.push(`${a.mode}: ${a.errorDesc||''}${a.consequence?' → '+a.consequence:''}`); });
+      if(opt.improvements) (anBy[id]||[]).forEach(a=>(a.improvements||[]).filter(i=>i.status!=='Rejected'&&['PROC','SUP'].includes(i.level)&&i.text).forEach(i=>com.push('Control: '+i.text)));
+      rows.push({id,num:nums[id],label:n.label,depth:d,role:agentNames(st,n.agents),abbr:agentLabel(st,n.agents),comments:com,warning:opt.warnings?n.warnings:'',crit:opt.highlight&&(n.critical||n.risk===3),photos:opt.photos?(n.photos||[]):[],plan:n.children.length?(n.plan.type==='cond'?n.plan.text:''):''});
+      n.children.forEach(c=>go(c,d+1)); };
+    if(t.children.length) t.children.forEach(c=>go(c,0)); else go(tid,0);
+    return {num:nums[tid],label:t.label,plan:t.children.length&&t.plan.type==='cond'?t.plan.text:'',rows}; });
+  return {title:root.label||st.meta.goal,revision:st.meta.revision,date:st.meta.date,site:[st.meta.site,st.meta.facility].filter(Boolean).join(' · '),preconditions:st.meta.preconditions,
+    overview:root.children.map(id=>({num:nums[id],label:wad.nodes[id].label})),sections};
+}
+function competenceRows(st){
+  const wad=st.maps.wad; const nums=numbering(wad);
+  return leavesOf(wad).filter(n=>n.critical||n.risk===3||st.competence[n.id]).map(n=>({n,num:nums[n.id],c:st.competence[n.id]||{}}));
+}
+function actionRows(st){
+  const wad=st.maps.wad; const nums=numbering(wad); const mode=st.meta.ratingMode; const out=[];
+  credibleList(st).forEach(a=>{ const n=wad.nodes[a.nodeId]; (a.improvements||[]).forEach(i=>out.push({Priority:priorityOf(a,n,mode)?'P'+priorityOf(a,n,mode):'',Step:nums[n.id],'Step text':n.label,'Error mode':a.mode+' '+(modeOf(a.mode)?.name||''),Improvement:i.text,'Control level':LEVEL[i.level]?.name||i.level,
+    'PIFs improved':(i.pifIds||[]).map(id=>a.pifs.find(p=>p.id===id)?.name).filter(Boolean).join('; '),Owner:i.owner,Due:i.due,Status:i.status,Verification:i.verification,Source:i.source||''})); });
+  return out.sort((x,y)=>(x.Priority||'P9').localeCompare(y.Priority||'P9'));
+}
+function analysisRows(st){
+  const wad=st.maps.wad; const nums=numbering(wad); const mode=st.meta.ratingMode;
+  return st.analyses.filter(a=>wad.nodes[a.nodeId]).map(a=>{ const n=wad.nodes[a.nodeId]; return {ID:nums[n.id],Description:n.label,'Agent/Person':agentLabel(st,n.agents),Warnings:n.warnings,Comments:n.comments,'Activity type':ACTIVITY_TYPES.find(x=>x.code===n.activity)?.name||'',
+    'Failure mode':a.mode+' '+(modeOf(a.mode)?.name||''),Credible:a.credible?'Yes':'No — '+a.notCredibleReason,'Error description':a.errorDesc,'Error type':a.errorType,Consequences:a.consequence,'Consequence type':(a.consTypes||[]).join('; '),
+    'Existing risk control measures / recovery':[a.controls,a.recovery?('Recovery: '+a.recovery):''].filter(Boolean).join('\n'),'Performance influencing factors':[a.pifNotes,...(a.pifs||[]).map(p=>`${p.name} ${p.baseline}${p.modified!=null&&p.modified!==p.baseline?' → '+p.modified:''}`)].filter(Boolean).join('\n'),
+    'Improvements (HoC / PIFs)':(a.improvements||[]).map(i=>`[${LEVEL[i.level]?.name||i.level}] ${i.text} (${i.status})`).join('\n'),'Score baseline':anScore(a,'baseline',mode)??'','Score modified':anScore(a,'modified',mode)??'',Priority:priorityOf(a,n,mode)?'P'+priorityOf(a,n,mode):'',
+    'Design requirement':a.designReq,'Verification / validation requirement':a.verifReq,'Analyst notes':a.notes}; });
+}
+function safeName(s){ return String(s||'study').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'_').slice(0,60)||'study'; }
+
+/* ---- DOCX ---- */
+function dataUrlBytes(d){ const b=atob(d.split(',')[1]); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); return u; }
+function imgSize(d){ return new Promise(r=>{ const i=new Image(); i.onload=()=>r([i.naturalWidth,i.naturalHeight]); i.onerror=()=>r([4,3]); i.src=d; }); }
+function docxKit(D,TOT=9000){
+  const P=(text,o={})=>new D.Paragraph({spacing:{after:o.after??80},heading:o.h,children:String(text??'').split('\n').map((l,i)=>new D.TextRun({text:l,bold:o.bold,italics:o.it,color:o.color,size:o.size,break:i?1:0}))});
+  const cell=(content,o={})=>new D.TableCell({width:o.w?{size:Math.round(TOT*o.w/100),type:D.WidthType.DXA}:undefined,shading:o.fill?{type:D.ShadingType.CLEAR,color:'auto',fill:o.fill}:undefined,
+    margins:{top:60,bottom:60,left:90,right:90},children:Array.isArray(content)?content:[P(content,{bold:o.bold,size:o.size||18,after:0,color:o.color})]});
+  const table=(heads,rows,widths)=>{ const ws=widths||heads.map(()=>100/heads.length); return new D.Table({width:{size:TOT,type:D.WidthType.DXA},columnWidths:ws.map(w=>Math.round(TOT*w/100)),layout:D.TableLayoutType.FIXED,rows:[new D.TableRow({tableHeader:true,children:heads.map((h,i)=>cell(h,{bold:true,fill:'DCE9E9',w:ws[i]}))}),
+    ...rows.map(r=>new D.TableRow({children:r.map((c,i)=>c instanceof D.TableCell?c:cell(c==null?'':String(c),{w:ws[i]}))}))]}); };
+  return {P,cell,table};
+}
+async function buildProcedureDocx(st,opt){
+  const D=await loadDocx(); const {P,cell,table}=docxKit(D); const m=procedureModel(st,opt); const ch=[];
+  ch.push(new D.Table({width:{size:9000,type:D.WidthType.DXA},columnWidths:[6300,2700],layout:D.TableLayoutType.FIXED,rows:[
+    new D.TableRow({children:[cell([P(m.title,{bold:true,size:30,after:0})],{w:70}),cell(`Revision: ${m.revision||''}\nIssue date: ${m.date||''}`,{w:30})]}),
+    new D.TableRow({children:[cell(m.site||' ',{w:70}),cell(st.meta.isExample?'EXAMPLE — not for operational use':'Risk-informed procedure',{w:30,bold:true})]})]}));
+  ch.push(P('',{}));
+  if(m.preconditions){ ch.push(P('Preconditions',{h:D.HeadingLevel.HEADING_2})); ch.push(table(['Before starting'],[[m.preconditions]],[100])); }
+  ch.push(P('Process overview',{h:D.HeadingLevel.HEADING_2})); m.overview.forEach(o=>ch.push(P(`${o.num}  ${o.label}`,{after:20})));
+  for(const s of m.sections){
+    ch.push(P(`${s.num}  ${s.label}`,{h:D.HeadingLevel.HEADING_2})); if(s.plan) ch.push(P('Plan: '+s.plan,{it:true}));
+    const heads=[...(opt.steps?['Step']:[]),'Description',...(opt.role?['Role']:[]),'✓','Comments']; const widths=[...(opt.steps?[9]:[]),opt.role?44:56,...(opt.role?[14]:[]),5,opt.role?28:30];
+    const rows=[]; for(const r of s.rows){ const fill=r.crit?'FDECEA':undefined; const comParas=[];
+      if(r.warning) comParas.push(P('WARNING: '+r.warning,{bold:true,color:'9B1C10',size:18,after:20}));
+      if(r.plan) comParas.push(P('Plan: '+r.plan,{it:true,size:18,after:20}));
+      r.comments.forEach(c=>comParas.push(P(c,{size:18,after:20})));
+      for(const ph of r.photos){ try{ const [w,h]=await imgSize(ph.data); const W=150; comParas.push(new D.Paragraph({children:[new D.ImageRun({data:dataUrlBytes(ph.data),transformation:{width:W,height:Math.round(W*h/w)}})]})); }catch(e){} }
+      if(!comParas.length) comParas.push(P('',{after:0}));
+      const desc='   '.repeat(r.depth)+r.label;
+      let wi=0; const W=()=>widths[wi++]; rows.push([...(opt.steps?[cell(r.num,{fill,w:W()})]:[]),cell(desc,{fill,w:W(),bold:r.depth===0&&s.rows.some(x=>x.depth>0)}),...(opt.role?[cell(r.abbr||r.role,{fill,w:W()})]:[]),cell('☐',{fill,w:W()}),cell(comParas,{fill,w:W()})]); }
+    ch.push(table(heads,rows,widths)); }
+  const doc=new D.Document({creator:'SHERPA Studio',title:m.title,styles:{default:{document:{run:{font:'Calibri',size:20}}}},sections:[{children:ch}]});
+  return D.Packer.toBlob(doc);
+}
+async function buildReportDocx(st){
+  const D=await loadDocx(); const {P,cell,table}=docxKit(D,13900); const wad=st.maps.wad; const nums=numbering(wad); const mode=st.meta.ratingMode; const ch=[]; const H=t=>P(t,{h:D.HeadingLevel.HEADING_1}); const H2=t=>P(t,{h:D.HeadingLevel.HEADING_2});
+  ch.push(P(st.meta.title,{h:D.HeadingLevel.TITLE})); ch.push(P('SHERPA analysis report · '+st.meta.studyType+' · Revision '+st.meta.revision+' · '+st.meta.date,{it:true}));
+  if(st.meta.isExample) ch.push(P('Example study: values come from a webinar demonstration and illustrative entries. Not for operational use.',{bold:true,color:'9B1C10'}));
+  ch.push(H('1  Study details')); ch.push(table(['Item','Detail'],[['Task goal',st.meta.goal],['Site / facility',[st.meta.site,st.meta.facility].filter(Boolean).join(' · ')],['Study lead',st.meta.owner],['Team',st.meta.team],['Work as done described by',st.meta.interviewees],['Preconditions',st.meta.preconditions],['Notes',st.meta.notes]],[25,75]));
+  ch.push(H('2  Method')); ch.push(P('The study followed the Systematic Human Error Reduction and Prediction Approach (SHERPA): (1) map the task as it is actually done and compare it with the procedure; (2) screen each step for risk and predict credible error modes for Medium and High steps; (3) rate the performance influencing factors (PIFs) for each credible error mode on a five-point scale, 0 best case to 100 worst case, 50 industry norm; (4) agree improvements for PIFs rated 75 or 100, strongest control type first. The error-mode score is the '+(mode==='enhanced'?'weighted':'')+' mean of its PIF ratings and is used to rank actions, not as a probability.'));
+  ch.push(H('3  Task map (work as done)')); ordered(wad).forEach(({n,d})=>{ ch.push(P(`${'    '.repeat(d)}${nums[n.id]}  ${n.label}${n.agents.length?'   [A/P: '+agentLabel(st,n.agents)+']':''}${n.ref?'   (procedure '+n.ref+')':''}`,{after:10,bold:d===0})); if(n.children.length) ch.push(P(`${'    '.repeat(d+1)}Plan ${nums[n.id]}: ${n.plan.type==='cond'?n.plan.text:PLAN_TYPES.find(p=>p.v===n.plan.type)?.l}`,{it:true,after:10,size:18})); });
+  const cmp=compareMaps(st); ch.push(H('4  Work as imagined vs work as done'));
+  ch.push(cmp.length?table(['Difference','Procedure step','Work as done','Why','Decision'],cmp.map(r=>{ const g=st.gaps[r.key]||{}; return [r.kind,r.wai?`${r.wai.ref||r.waiNum} ${r.wai.label}`:'—',r.wad?`${r.wadNum} ${r.wad.label}`:'—',[g.reason,g.note].filter(Boolean).join(': '),g.decision||'Not decided']; }),[12,28,28,16,16]):P('No work-as-imagined map was compared, or no differences were found.'));
+  ch.push(H('5  Step screening')); const scr=leavesOf(wad).filter(n=>n.risk>=2);
+  ch.push(scr.length?table(['Step','Description','A/P','Risk','Reason'],scr.map(n=>[nums[n.id],n.label,agentLabel(st,n.agents),riskName(n.risk),n.riskReason]),[8,40,10,10,32]):P('No Medium or High steps.'));
+  ch.push(P(`Steps screened: ${leavesOf(wad).filter(n=>n.risk).length} of ${leavesOf(wad).length}. High ${leavesOf(wad).filter(n=>n.risk===3).length}, Medium ${leavesOf(wad).filter(n=>n.risk===2).length}, Low ${leavesOf(wad).filter(n=>n.risk===1).length}.`,{it:true}));
+  const cl=credibleList(st); ch.push(H('6  Human error analysis'));
+  ch.push(cl.length?table(['Step','Error mode','Error description','Type','Consequence','Consequence type','Existing controls / recovery','Score','Priority'],cl.map(a=>{ const n=wad.nodes[a.nodeId]; return [nums[n.id],a.mode+' '+(modeOf(a.mode)?.name||''),a.errorDesc,a.errorType,a.consequence,(a.consTypes||[]).join('; '),[a.controls,a.recovery].filter(Boolean).join('\n'),`${anScore(a,'baseline',mode)??'—'} → ${anScore(a,'modified',mode)??'—'}`,priorityOf(a,n,mode)?'P'+priorityOf(a,n,mode):'']; }),[6,13,15,7,14,10,16,9,6]):P('No credible error modes recorded.'));
+  const nc=st.analyses.filter(a=>!a.credible&&wad.nodes[a.nodeId]); if(nc.length){ ch.push(H2('Error modes ruled out')); ch.push(table(['Step','Error mode','Reason'],nc.map(a=>[nums[a.nodeId],a.mode,a.notCredibleReason]),[10,25,65])); }
+  ch.push(H('7  Performance influencing factors')); const prow=[]; cl.forEach(a=>(a.pifs||[]).forEach(p=>prow.push([nums[a.nodeId],a.mode,p.name,p.statement,p.baseline,p.modified==null?'':p.modified,p.reason])));
+  ch.push(prow.length?table(['Step','Mode','PIF','Statement','Baseline','Modified','Reason'],prow,[6,7,14,27,8,8,30]):P('No PIFs rated.'));
+  ch.push(H('8  Improvements and action list')); const ar=actionRows(st);
+  ch.push(ar.length?table(['Priority','Step','Error mode','Improvement','Control level','PIFs improved','Owner','Due','Status'],ar.map(r=>[r.Priority,r.Step,r['Error mode'],r.Improvement,r['Control level'],r['PIFs improved'],r.Owner,r.Due,r.Status]),[7,6,13,26,11,13,10,7,7]):P('No improvements recorded.'));
+  const dr=cl.filter(a=>a.designReq||a.verifReq); if(dr.length){ ch.push(H('9  Design and verification requirements')); ch.push(table(['Step','Error mode','Design requirement','Verification / validation'],dr.map(a=>[nums[a.nodeId],a.mode,a.designReq,a.verifReq]),[8,14,39,39])); }
+  const cr=competenceRows(st).filter(r=>r.c.criticalDeviation||r.c.knowledge||r.c.skills||r.c.experience); ch.push(H((dr.length?'10':'9')+'  Competence requirements for critical steps'));
+  ch.push(cr.length?table(['Step','Description','Critical deviation','Knowledge, skills and experience','Ref. doc'],cr.map(r=>[r.num,r.n.label,r.c.criticalDeviation,['Knowledge: '+(r.c.knowledge||''),'Skill: '+(r.c.skills||''),'Experience: '+(r.c.experience||'')].join('\n'),r.c.refDoc]),[7,22,24,37,10]):P('No competence requirements written yet.'));
+  ch.push(H('Traceability')); cl.forEach(a=>(a.improvements||[]).filter(i=>i.status!=='Rejected').forEach(i=>{ const ps=(i.pifIds||[]).map(id=>a.pifs.find(p=>p.id===id)).filter(Boolean); ch.push(P(`Step ${nums[a.nodeId]} → ${a.mode} ${modeOf(a.mode)?.name||''} → ${ps.map(p=>`${p.name} (${p.baseline}${p.modified!=null?'→'+p.modified:''})`).join(', ')||'no PIF linked'} → [${LEVEL[i.level]?.name}] ${i.text}`,{size:18,after:30})); }));
+  const g=gates(st); const open=Object.entries(g).filter(([k,v])=>v.length); if(open.length){ ch.push(H('Open items at time of export')); open.forEach(([k,v])=>{ ch.push(P(STAGES.find(s=>s.k===k)?.l+(st.gateNotes[k]?` — proceeded: ${st.gateNotes[k]}`:''),{bold:true,after:20})); v.forEach(x=>ch.push(P('• '+x,{size:18,after:10}))); }); }
+  const doc=new D.Document({creator:'SHERPA Studio',title:st.meta.title,styles:{default:{document:{run:{font:'Calibri',size:20}}}},sections:[{properties:{page:{size:{orientation:D.PageOrientation.LANDSCAPE}}},children:ch}]});
+  return D.Packer.toBlob(doc);
+}
+async function buildCompetenceDocx(st){
+  const D=await loadDocx(); const {P,table}=docxKit(D,13900); const rows=competenceRows(st);
+  const doc=new D.Document({creator:'SHERPA Studio',sections:[{properties:{page:{size:{orientation:D.PageOrientation.LANDSCAPE}}},children:[P('Sustained competence: '+(st.meta.goal||st.meta.title),{h:D.HeadingLevel.TITLE}),P('Critical steps and the knowledge, skills and experience needed to perform them correctly.',{it:true}),
+    table(['Step','Description','Critical deviation','Competence requirements (knowledge, skills and experience)','Ref. doc'],rows.map(r=>[r.num,r.n.label,r.c.criticalDeviation||'',['Knowledge: '+(r.c.knowledge||''),'Skill: '+(r.c.skills||''),'Experience: '+(r.c.experience||'')].join('\n'),r.c.refDoc||'']),[7,22,25,36,10])]}]});
+  return D.Packer.toBlob(doc);
+}
+async function buildXlsx(st){
+  const X=await loadXlsx(); const wb=X.utils.book_new(); const wad=st.maps.wad, wai=st.maps.wai; const nw=numbering(wad), ni=numbering(wai);
+  const add=(name,rows,widths)=>{ const ws=X.utils.json_to_sheet(rows.length?rows:[{Note:'No data'}]); if(rows.length){ const keys=Object.keys(rows[0]); ws['!cols']=keys.map((k,i)=>({wch:(widths&&widths[i])||Math.min(60,Math.max(10,k.length+2,...rows.slice(0,50).map(r=>String(r[k]??'').split('\n')[0].length)))})); ws['!autofilter']={ref:ws['!ref']}; } X.utils.book_append_sheet(wb,ws,name); };
+  add('Study',[['Title',st.meta.title],['Study type',st.meta.studyType],['Task goal',st.meta.goal],['Site',st.meta.site],['Facility',st.meta.facility],['Revision',st.meta.revision],['Date',st.meta.date],['Lead',st.meta.owner],['Team',st.meta.team],['Interviewees',st.meta.interviewees],['Preconditions',st.meta.preconditions],['PIF rating mode',st.meta.ratingMode],['Notes',st.meta.notes]].map(([k,v])=>({Item:k,Detail:v})),[22,90]);
+  add('Task map (WAD)',ordered(wad).map(({n,d})=>({No:nw[n.id],Level:d+1,Step:'  '.repeat(d)+n.label,'Agent/Person':agentLabel(st,n.agents),Where:st.locations.find(l=>l.id===n.where)?.name||'',Start:n.start,Finish:n.finish,'Activity type':ACTIVITY_TYPES.find(a=>a.code===n.activity)?.name||'',Plan:n.children.length?(n.plan.type==='cond'?n.plan.text:PLAN_TYPES.find(p=>p.v===n.plan.type)?.l):'','Procedure step':n.ref,Risk:n.children.length?'':riskName(n.risk),'Risk reason':n.riskReason,Critical:n.critical?'Yes':'',Warnings:n.warnings,Comments:n.comments,Tags:n.tags})));
+  add('Procedure (WAI)',ordered(wai).map(({n,d})=>({No:ni[n.id],'Procedure step':n.ref,Step:'  '.repeat(d)+n.label,'Agent/Person':agentLabel(st,n.agents)})));
+  add('Differences',compareMaps(st).map(r=>{ const g=st.gaps[r.key]||{}; return {Difference:r.kind,'Procedure step':r.wai?(r.wai.ref||r.waiNum):'','Procedure text':r.wai?.label||'','WAD no':r.wadNum||'','WAD text':r.wad?.label||'',Why:g.reason||'',Note:g.note||'',Decision:g.decision||''}; }));
+  add('Risk assessment',analysisRows(st));
+  const pr=[]; credibleList(st).forEach(a=>(a.pifs||[]).forEach(p=>pr.push({Step:nw[a.nodeId],'Error mode':a.mode,PIF:p.name,Statement:p.statement,Baseline:p.baseline,Modified:p.modified==null?'':p.modified,Weight:p.weight||1,Reason:p.reason,'No-control reason':p.noControlReason||''}))); add('PIF ratings',pr);
+  add('Action list',actionRows(st));
+  add('Competence',competenceRows(st).map(r=>({Step:r.num,Description:r.n.label,'Critical deviation':r.c.criticalDeviation||'',Knowledge:r.c.knowledge||'',Skills:r.c.skills||'',Experience:r.c.experience||'','Ref. doc':r.c.refDoc||''})));
+  const out=X.write(wb,{bookType:'xlsx',type:'array'}); return new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+function toCSV(rows){ if(!rows.length) return 'No data\n'; const k=Object.keys(rows[0]); const q=v=>{ const s=String(v??''); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }; return [k.join(','),...rows.map(r=>k.map(x=>q(r[x])).join(','))].join('\n'); }
+
+/* ===================== Stage 8: Outputs ===================== */
+function ProcedurePreview({st,opt}){
+  const m=procedureModel(st,opt);
+  return html`<div class="doc"><div class="hdr"><div><h1>${m.title}</h1><div>${m.site}</div></div><div style="text-align:right">Revision: ${m.revision}<br/>Issue date: ${m.date}${st.meta.isExample?html`<br/><b style="color:#9b1c10">EXAMPLE</b>`:null}</div></div>
+    ${m.preconditions?html`<h2>Preconditions</h2><div class="box">${m.preconditions}</div>`:null}
+    <h2>Process overview</h2><div class="box">${m.overview.map(o=>html`<div key=${o.num}>${o.num}  ${o.label}</div>`)}</div>
+    ${m.sections.map(s=>html`<div key=${s.num}><h2>${s.num}  ${s.label}</h2>${s.plan?html`<p style="margin:0 0 6px;font-style:italic">Plan: ${s.plan}</p>`:null}
+      <div style="overflow-x:auto"><table><thead><tr>${opt.steps?html`<th>Step</th>`:null}<th>Description</th>${opt.role?html`<th>Role</th>`:null}<th>✓</th><th>Comments</th></tr></thead><tbody>
+        ${s.rows.map(r=>html`<tr key=${r.id} class=${r.crit?'crit':''}>${opt.steps?html`<td style="white-space:nowrap">${r.num}</td>`:null}<td style=${{paddingLeft:7+r.depth*16+'px',fontWeight:r.depth===0&&s.rows.some(x=>x.depth>0)?600:400}}>${r.label}</td>${opt.role?html`<td>${r.abbr||r.role}</td>`:null}<td>☐</td>
+          <td>${r.warning?html`<div class="warn">WARNING: ${r.warning}</div>`:null}${r.plan?html`<div><i>Plan: ${r.plan}</i></div>`:null}${r.comments.map((c,i)=>html`<div key=${i}>${c}</div>`)}${r.photos.map(p=>html`<img key=${p.id} src=${p.data} alt=${p.caption}/>`)}</td></tr>`)}
+      </tbody></table></div></div>`)}
+  </div>`;
+}
+function Outputs({st,update,notify,ui,setUi}){
+  const tab=ui.outTab||'procedure'; const [opt,setOpt]=useState({steps:true,role:true,errors:false,improvements:true,warnings:true,highlight:true,photos:true}); const [busy,setBusy]=useState('');
+  const run=async(label,fn)=>{ setBusy(label); try{ await fn(); }catch(e){ console.error(e); notify('Export failed: '+(e&&e.message||e)); } setBusy(''); };
+  const base=safeName(st.meta.title);
+  const o=(k,l)=>html`<label class="row small" style="gap:6px" key=${k}><input type="checkbox" checked=${opt[k]} onChange=${e=>setOpt(Object.assign({},opt,{[k]:e.target.checked}))}/> ${l}</label>`;
+  const nums=numbering(st.maps.wad);
+  const comp=competenceRows(st);
+  return html`<div style="display:flex;flex-direction:column;gap:14px">
+    <div class="seg" role="tablist">${[['procedure','Risk-informed procedure'],['competence','Competence sheet'],['downloads','Reports and files']].map(([k,l])=>html`<button key=${k} role="tab" aria-pressed=${tab===k} onClick=${()=>setUi({outTab:k})}>${l}</button>`)}</div>
+    ${tab==='procedure'?html`<div class="split wide-left"><div style="min-width:0;overflow-x:auto"><${ProcedurePreview} st=${st} opt=${opt}/></div>
+      <div class="panel sticky"><div class="panel-h"><h3>Report options</h3></div><div class="panel-b">${o('steps','Add Steps column')}${o('role','Add Role column')}${o('errors','Add error description and consequences to Comments')}${o('improvements','Add agreed procedure and supervision controls to Comments')}${o('warnings','Show warnings')}${o('highlight','Highlight critical and High-risk steps')}${o('photos','Include photos')}
+        <button class="btn primary" disabled=${!!busy} onClick=${()=>run('proc',async()=>{ const b=await buildProcedureDocx(st,opt); await saveFile(base+'_procedure.docx',b,notify); })}>${busy==='proc'?'Building…':'Download Word (.docx)'}</button>
+        <p class="small faint" style="margin:0">The procedure is built from the work-as-done map: one table per task, in task order.</p></div></div></div>`:null}
+    ${tab==='competence'?html`<div style="display:flex;flex-direction:column;gap:12px">
+      <p class="small muted" style="margin:0;max-width:90ch">Critical and High-risk steps need written competence requirements: what a critical deviation looks like, and the knowledge, skills and experience that prevent it. Training improvements from stage 7 can be pulled in.</p>
+      ${comp.map(r=>{ const c=r.c; const setC=(k,v)=>update(s=>{ s.competence[r.n.id]=Object.assign({},s.competence[r.n.id]||{},{[k]:v}); }); const trn=st.analyses.filter(a=>a.nodeId===r.n.id).flatMap(a=>(a.improvements||[]).filter(i=>i.level==='TRN'&&i.status!=='Rejected').map(i=>i.text));
+        return html`<div class="card" key=${r.n.id}><div class="card-h"><span class="code">${r.num}</span><b>${r.n.label}</b><${RiskPill} r=${r.n.risk}/>${r.n.critical?html`<span class="pill sig">critical</span>`:null}<span class="grow"></span>${trn.length?html`<button class="btn sm" onClick=${()=>setC('knowledge',[c.knowledge,...trn].filter(Boolean).join('\n'))}>Pull ${trn.length} training improvement${trn.length>1?'s':''}</button>`:null}</div>
+          <${Field} label="Critical deviation"><${Txt} id=${'cd-'+r.n.id} rows="2" value=${c.criticalDeviation} onChange=${v=>setC('criticalDeviation',v)}/><//>
+          <div class="grid3"><${Field} label="Knowledge"><${Txt} id=${'ck-'+r.n.id} rows="3" value=${c.knowledge} onChange=${v=>setC('knowledge',v)}/><//><${Field} label="Skills"><${Txt} id=${'cs-'+r.n.id} rows="3" value=${c.skills} onChange=${v=>setC('skills',v)}/><//><${Field} label="Experience"><${Txt} id=${'ce-'+r.n.id} rows="3" value=${c.experience} onChange=${v=>setC('experience',v)}/><//></div>
+          <${Field} label="Reference document"><${Txt} id=${'cr-'+r.n.id} value=${c.refDoc} onChange=${v=>setC('refDoc',v)}/><//></div>`; })}
+      ${!comp.length?html`<div class="panel"><div class="empty">No critical or High-risk steps yet. Mark them in stage 4.</div></div>`:html`<div><button class="btn primary" disabled=${!!busy} onClick=${()=>run('comp',async()=>{ await saveFile(base+'_competence.docx',await buildCompetenceDocx(st),notify); })}>${busy==='comp'?'Building…':'Download competence sheet (.docx)'}</button></div>`}
+    </div>`:null}
+    ${tab==='downloads'?html`<div class="grid2">
+      ${[['report','Full SHERPA report','Word, landscape: study details, method, task map, differences, screening, error analysis, PIFs, action list, design requirements, competence, traceability and open items.','Download .docx',async()=>saveFile(base+'_SHERPA_report.docx',await buildReportDocx(st),notify)],
+         ['xlsx','Analysis workbook','Excel with one sheet each for study, task map, procedure, differences, risk assessment grid, PIF ratings, action list and competence. Filters on every sheet.','Download .xlsx',async()=>saveFile(base+'_SHERPA.xlsx',await buildXlsx(st),notify)],
+         ['csv','Action list','Every improvement with priority, owner, due date and status, for your action tracker.','Download .csv',async()=>saveFile(base+'_actions.csv',toCSV(actionRows(st)),notify)],
+         ['svg','Task map picture','The work-as-done map as a vector drawing, for reports and slides.','Download .svg',async()=>saveFile(base+'_task_map.svg',diagramSVG(st,st.maps.wad,{colorBy:'agent',forExport:true}),notify)],
+         ['json','Study file','The whole study, to reopen later, share with a colleague or keep under version control.','Save .sherpa.json',async()=>saveFile(base+'.sherpa.json',JSON.stringify(st,null,1),notify)]].map(([k,t,d,b,fn])=>html`<div class="card" key=${k}><h3>${t}</h3><p class="small muted" style="margin:0">${d}</p><div><button class="btn primary" disabled=${!!busy} onClick=${()=>run(k,fn)}>${busy===k?'Building…':b}</button></div></div>`)}
+    </div>`:null}
+  </div>`;
+}
+
+/* ===================== Grid ===================== */
+function Grid({st,update,go,setUi}){
+  const wad=st.maps.wad; const nums=numbering(wad); const mode=st.meta.ratingMode; const [onlyCred,setOnlyCred]=useState(true);
+  const ord=Object.fromEntries(leavesOf(wad).map((n,i)=>[n.id,i]));
+  const list=st.analyses.filter(a=>wad.nodes[a.nodeId]&&(!onlyCred||a.credible)).sort((a,b)=>(ord[a.nodeId]-ord[b.nodeId])||a.mode.localeCompare(b.mode));
+  const setA=(id,k,v)=>update(s=>{ const a=s.analyses.find(x=>x.id===id); if(a) a[k]=v; });
+  const setN=(id,k,v)=>update(s=>{ s.maps.wad.nodes[id][k]=v; });
+  const ta=(id,val,fn)=>html`<textarea id=${id} rows="2" value=${val||''} onInput=${e=>fn(e.target.value)} style="min-width:160px"></textarea>`;
+  return html`<div style="display:flex;flex-direction:column;gap:10px">
+    <div class="row"><label class="row small"><input type="checkbox" checked=${onlyCred} onChange=${e=>setOnlyCred(e.target.checked)}/> Credible error modes only</label><span class="small faint">${list.length} rows · one row per error mode, as in the demo data grid. Edit any cell; open a row in its stage for ratings and controls.</span></div>
+    <div class="tbl-wrap" style="max-height:72vh;overflow:auto"><table class="tbl"><thead><tr><th>ID</th><th>Description</th><th>A/P</th><th>Warnings</th><th>Activity</th><th>Failure mode</th><th>Error description</th><th>Error type</th><th>Consequences</th><th>Consequence type</th><th>Existing controls / recovery</th><th>PIFs</th><th>Improvements</th><th class="num">Score</th><th>Pri.</th><th>Analyst notes</th><th></th></tr></thead><tbody>
+      ${list.map(a=>{ const n=wad.nodes[a.nodeId]; return html`<tr key=${a.id}><td class="num">${nums[n.id]}</td><td class="small" style="min-width:180px">${n.label}</td><td class="small">${agentLabel(st,n.agents)}</td><td>${ta('gw-'+a.id,n.warnings,v=>setN(n.id,'warnings',v))}</td>
+        <td class="small">${ACTIVITY_TYPES.find(x=>x.code===n.activity)?.name||''}</td><td class="small"><span class="code">${a.mode}</span> ${modeOf(a.mode)?.name||''}</td>
+        <td>${ta('ge-'+a.id,a.errorDesc,v=>setA(a.id,'errorDesc',v))}</td><td><select id=${'gt-'+a.id} value=${a.errorType} onChange=${e=>setA(a.id,'errorType',e.target.value)} style="min-width:120px"><option value="">—</option>${ERROR_TYPES.map(t=>html`<option key=${t.v}>${t.v}</option>`)}</select></td>
+        <td>${ta('gc-'+a.id,a.consequence,v=>setA(a.id,'consequence',v))}</td><td class="small">${(a.consTypes||[]).join('; ')}</td><td>${ta('gx-'+a.id,a.controls,v=>setA(a.id,'controls',v))}</td>
+        <td class="small" style="min-width:150px">${(a.pifs||[]).map(p=>html`<div key=${p.id}>${p.name} <b class="mono">${p.baseline}</b></div>`)}</td><td class="small" style="min-width:180px">${(a.improvements||[]).map(i=>html`<div key=${i.id}>[${LEVEL[i.level]?.name}] ${i.text}</div>`)}</td>
+        <td class="num">${anScore(a,'baseline',mode)??''}</td><td><${PriPill} p=${priorityOf(a,n,mode)}/></td><td>${ta('gn-'+a.id,a.notes,v=>setA(a.id,'notes',v))}</td>
+        <td><button class="btn sm" onClick=${()=>{ setUi({pifAn:a.id,ctlAn:a.id,errStep:n.id}); go(a.pifs.length?'controls':'pifs'); }}>Open</button></td></tr>`; })}
+      ${!list.length?html`<tr><td colspan="17" class="empty">No error modes yet. Add them in stage 5.</td></tr>`:null}
+    </tbody></table></div></div>`;
+}
+
+/* ===================== App shell ===================== */
+const STAGE_INFO={
+  setup:['Set up the study','Name the study and its goal, record who is in the team and who described the work, and list the roles and locations involved.'],
+  map:['Map the task','Bring in the procedure as work as imagined, then build work as done with the people who do the job. Each step keeps its procedure number.'],
+  compare:['Compare work as imagined with work as done','Every difference between the procedure and real practice, with a reason and a decision.'],
+  screen:['Screen the steps','Rate each lowest-level step High, Medium or Low by what could happen if it went wrong. Medium and High steps go forward.'],
+  errors:['Predict human errors','For each step carried forward, choose the activity type and tick each credible way it could go wrong.'],
+  pifs:['Assess performance influencing factors','For each credible error mode, rate the conditions that make it more or less likely, and give the reason.'],
+  controls:['Improve controls','For every PIF rated 75 or 100, agree the strongest practical control and the rating you expect afterwards.'],
+  outputs:['Outputs','Turn the analysis into a risk-informed procedure, a competence sheet, a full report and an action list.'],
+  grid:['Analysis grid','All error modes in one spreadsheet view, matching the demo data grid columns.']
+};
+function App(){
+  const [study,setStudy]=useState(null); const [stage,setStage]=useState('setup'); const [ui,setUiS]=useState({});
+  const [modal,setModal]=useState(null); const [toast,setToast]=useState(''); const [gloss,setGloss]=useState(false); const [saved,setSaved]=useState('');
+  const setUi=p=>setUiS(u=>Object.assign({},u,p));
+  const notify=useCallback(m=>{ setToast(m); clearTimeout(window.__t); window.__t=setTimeout(()=>setToast(''),3200); },[]);
+  const update=useCallback(fn=>setStudy(prev=>{ const n=clone(prev); fn(n); n.updated=new Date().toISOString(); return n; }),[]);
+  useEffect(()=>{ if(!study) return; const t=setTimeout(()=>{ const ok=saveStudyLS(study); setSaved(ok?'Saved in this browser '+new Date().toTimeString().slice(0,5):'Not saved: browser storage is unavailable. Use "Save study file".'); },700); return ()=>clearTimeout(t); },[study]);
+  const open=s=>{ setStudy(s); setUiS({}); setStage(leavesOf(s.maps.wad).length?'map':'setup'); window.scrollTo(0,0); };
+  const g=useMemo(()=>study?gates(study):{},[study]);
+  const go=k=>{ setStage(k); window.scrollTo(0,0); };
+  const ask=m=>setModal(m);
+  const saveJson=()=>saveFile(safeName(study.meta.title)+'.sherpa.json',JSON.stringify(study,null,1),notify);
+  if(!study) return html`<${React.Fragment}><header class="bar"><div class="wrap bar-in"><div class="brand">SHERPA Studio <small>risk2safe</small></div><span class="grow"></span><button class="btn ghost" onClick=${()=>setGloss(true)}>Glossary</button></div></header>
+    <main><${Home} open=${open} notify=${notify} ask=${ask}/></main>${gloss?html`<${Glossary} close=${()=>setGloss(false)}/>`:null}<${Modal} m=${modal} close=${()=>setModal(null)}/>${toast?html`<div class="toast" role="status">${toast}</div>`:null}<//>`;
+  const idx=STAGES.findIndex(s=>s.k===stage); const next=STAGES[idx+1]?.k; const info=STAGE_INFO[stage];
+  const props={st:study,update,ask,notify,ui,setUi,go};
+  return html`<${React.Fragment}>
+    <header class="bar"><div class="wrap bar-in"><div class="brand">SHERPA Studio <small>risk2safe</small></div>
+      <div class="study-name"><button class="btn sm ghost" onClick=${()=>{ saveStudyLS(study); setStudy(null); }}>← All studies</button><span title=${study.meta.title}>${study.meta.title}</span>${study.meta.isExample?html`<span class="pill sig">example</span>`:null}</div>
+      <span class="save-state hide-sm">${saved}</span>
+      <div class="bar-actions"><button class="btn sm" onClick=${saveJson}>Save study file</button><button class="btn sm ghost" onClick=${()=>setGloss(true)}>Glossary</button></div></div></header>
+    <nav class="rail" aria-label="SHERPA stages"><div class="wrap rail-in">${STAGES.map(s=>{ const iss=g[s.k]; const ok=iss&&!iss.length; const dot=(s.k==='outputs'||s.k==='grid')?'':ok?'ok':'warn';
+      return html`<button key=${s.k} class="stage" aria-current=${stage===s.k?'step':undefined} onClick=${()=>go(s.k)}><span class="num">${s.n}</span><span class="lbl">${s.l}</span>${dot?html`<span class=${'dot '+dot} title=${ok?'Complete':(iss.length+' open item(s)')}></span>`:null}</button>`; })}</div></nav>
+    <main><div class="wrap" style="display:flex;flex-direction:column;gap:14px">
+      ${study.meta.isExample&&stage==='setup'?html`<div class="notice small">This is an example study built from the HRA "Watch SHERPA in Action" webinar demo. Entries marked "example" were added to show the workflow. Replace them with your own data before using any output.</div>`:null}
+      <div class="page-head"><div><div class="eyebrow">Stage ${STAGES[idx].n} of ${STAGES.length}</div><h2>${info[0]}</h2><p>${info[1]}</p></div></div>
+      ${stage==='setup'?html`<${Setup} ...${props}/>`:null}
+      ${stage==='map'?html`<${MapStage} ...${props}/>`:null}
+      ${stage==='compare'?html`<${Compare} ...${props}/>`:null}
+      ${stage==='screen'?html`<${Screen} ...${props}/>`:null}
+      ${stage==='errors'?html`<${Errors} ...${props}/>`:null}
+      ${stage==='pifs'?html`<${Pifs} ...${props}/>`:null}
+      ${stage==='controls'?html`<${Controls} ...${props}/>`:null}
+      ${stage==='outputs'?html`<${Outputs} ...${props}/>`:null}
+      ${stage==='grid'?html`<${Grid} ...${props}/>`:null}
+      ${g[stage]&&stage!=='outputs'&&stage!=='grid'?html`<${Gate} issues=${g[stage]} stage=${stage} st=${study} update=${update} next=${next} go=${go}/>`:null}
+    </div></main>
+    ${gloss?html`<${Glossary} close=${()=>setGloss(false)}/>`:null}<${Modal} m=${modal} close=${()=>setModal(null)}/>${toast?html`<div class="toast" role="status">${toast}</div>`:null}<//>`;
+}
+function Glossary({close}){
+  useEffect(()=>{ const k=e=>{ if(e.key==='Escape') close(); }; window.addEventListener('keydown',k); return ()=>window.removeEventListener('keydown',k); },[]);
+  return html`<div class="scrim" onClick=${e=>{if(e.target===e.currentTarget) close();}}><aside class="drawer" role="dialog" aria-label="Glossary"><div class="row" style="justify-content:space-between"><h2>Glossary</h2><button class="btn" onClick=${close}>Close</button></div>
+    <p class="small muted" style="margin:0">Terms from the SHERPA method, as used in this studio.</p>
+    <dl class="gloss">${GLOSSARY.map(([t,d])=>html`<div key=${t}><dt>${t}</dt><dd>${d}</dd></div>`)}</dl>
+    <div><h3 style="margin-bottom:6px">Rating scale</h3>${RATING.map(r=>html`<div key=${r.v} class="row small"><span class="code" style="min-width:36px;text-align:center">${r.v}</span>${r.l} — ${r.h}</div>`)}</div>
+    <div><h3 style="margin-bottom:6px">Priority bands</h3><div class="small muted">P1: High step with error-mode score 60 or more. P2: High step with a lower score, or Medium step with 60 or more. P3: everything else.</div></div>
+  </aside></div>`;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(html`<${App}/>`);
+
+</script>

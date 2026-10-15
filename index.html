@@ -1,4 +1,4 @@
-<title>SHERPA Studio</title>
+<title>Human Error Analysis Studio</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -214,7 +214,7 @@ dl.gloss dd{margin:2px 0 0;color:var(--ink-2)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 .hide-sm{} @media (max-width:640px){.hide-sm{display:none}}
 </style>
-<div id="root"><div class="wrap" style="padding-block:40px"><p>Loading SHERPA Studio…</p></div></div>
+<div id="root"><div class="wrap" style="padding-block:40px"><p>Loading Human Error Analysis Studio…</p></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.umd.js"></script>
@@ -326,8 +326,8 @@ PIFS.forEach(p=>{ p.c = p.c.filter(x=>Array.isArray(x)&&x.length===2); });
 const PIF = Object.fromEntries(PIFS.map(p=>[p.id,p]));
 
 const GLOSSARY = [
-  ['SHERPA','Systematic Human Error Reduction and Prediction Approach (Embrey, 1986). A structured way to find how each step of a task could fail, why, and what would make correct performance easier.'],
-  ['SCTA','Safety Critical Task Analysis. A SHERPA study is one way to carry out an SCTA.'],
+  ['HEA','Human Error Analysis: the task-based method this studio follows. A structured way to find how each step of a task could fail, why, and what would make correct performance easier.'],
+  ['SCTA','Safety Critical Task Analysis. A human error analysis study in this studio is one way to carry out an SCTA.'],
   ['Work as imagined (WAI)','The task as written in the procedure, or as managers and designers assume it is done.'],
   ['Work as done (WAD)','The task as operators actually perform it, captured by walking and talking it through with them.'],
   ['Task map / HTA','Hierarchical Task Analysis. The goal at the top, tasks and subtasks below, numbered 1, 1.1, 1.1.1.'],
@@ -507,7 +507,7 @@ function buildTanker(){
   Object.assign(st.meta,{goal:'Offload from road tanker',site:'Example chemical site',facility:'Road tanker offloading point',studyType:'SCTA',revision:'1',owner:'Lead analyst',
     team:'HF specialist (facilitator), process safety engineer, shift team leader',interviewees:'Tanker driver, offloading operator (walk-through at the offloading point)',
     preconditions:'Tanker at site\n\nEquipment:\nOffloading checklist\nOperator PPE\n\nPersonnel:\nTanker Driver (TD)\nOperator (Op)\nTeam Leader (TL)',
-    notes:'Example built from the HRA "Watch SHERPA in Action" webinar demo (14 Oct 2026). Procedure wording is reconstructed from the screen. Ratings and wording marked "example" were added to show the workflow; replace them with your own study data.',isExample:true});
+    notes:'Example study for a road tanker offloading task. Procedure wording is illustrative. Ratings and wording marked "example" were added to show the workflow; replace them with your own study data.',isExample:true});
   const TD={id:uid('a'),name:'Tanker Driver',abbr:'TD',color:PALETTE[0]}, OP={id:uid('a'),name:'Operator',abbr:'Op',color:PALETTE[1]}, TL={id:uid('a'),name:'Team Leader',abbr:'TL',color:PALETTE[2]};
   st.agents=[TD,OP,TL];
   st.locations=[{id:uid('l'),name:'Front gate',color:PALETTE[3]},{id:uid('l'),name:'Control room',color:PALETTE[2]},{id:uid('l'),name:'Offloading point',color:PALETTE[4]}];
@@ -614,7 +614,7 @@ function buildConsole(){
   const st=newStudy('Operate complicated equipment — design review (example)');
   Object.assign(st.meta,{goal:'Operate complicated equipment',studyType:'Design review',revision:'A',site:'Design project',facility:'Operator consoles A, B and C',
     team:'Design engineer, HF specialist',interviewees:'Experienced operator (talk-through of the console layout)',preconditions:'Equipment powered and handed over for operation',
-    notes:'Example from the engineering-projects part of the HRA SHERPA webinar demo. Shows design and verification requirement columns.',isExample:true});
+    notes:'Example design review for an operator console. Shows design and verification requirement columns.',isExample:true});
   const PA={id:uid('a'),name:'Person A',abbr:'Person A',color:PALETTE[2]}; st.agents=[PA];
   st.locations=[{id:uid('l'),name:'Console A',color:PALETTE[0]},{id:uid('l'),name:'Console B',color:PALETTE[1]},{id:uid('l'),name:'Console C',color:PALETTE[2]}];
   const [CA,CB,CC]=st.locations.map(l=>l.id);
@@ -649,7 +649,7 @@ const LS = {
   set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true;}catch(e){ return false; } },
   del(k){ try{ localStorage.removeItem(k);}catch(e){} }
 };
-const IDX='sherpaStudio.index', SK=id=>'sherpaStudio.s.'+id;
+const IDX='heaStudio.index', SK=id=>'heaStudio.s.'+id;
 function saveStudyLS(st){ const ok=LS.set(SK(st.id),st); const idx=LS.get(IDX,[]).filter(x=>x.id!==st.id); idx.unshift({id:st.id,title:st.meta.title,type:st.meta.studyType,updated:st.updated,example:!!st.meta.isExample}); LS.set(IDX,idx.slice(0,60)); return ok; }
 
 /* ---- capability helpers ---- */
@@ -752,13 +752,13 @@ function Home({open,notify,ask}){
   const openId=id=>{ const s=LS.get(SK(id),null); if(s) open(s); else notify('That study could not be found in this browser'); };
   const del=id=>ask({title:'Delete this study?',body:'It is removed from this browser. Save a study file first if you may need it again.',okLabel:'Delete',danger:true,ok:()=>{ LS.del(SK(id)); const n=LS.get(IDX,[]).filter(x=>x.id!==id); LS.set(IDX,n); setIdx(n); }});
   const dup=id=>{ const s=LS.get(SK(id),null); if(!s) return; const c=clone(s); c.id=uid('s'); c.meta.title=s.meta.title+' (copy)'; c.updated=new Date().toISOString(); saveStudyLS(c); setIdx(LS.get(IDX,[])); };
-  const onFile=e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ const s=JSON.parse(r.result); if(!s||!s.maps||!s.meta) throw new Error('bad'); if(!s.id) s.id=uid('s'); open(s); }catch(err){ notify('That file is not a SHERPA Studio study (.sherpa.json)'); } }; r.readAsText(f); e.target.value=''; };
+  const onFile=e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ const s=JSON.parse(r.result); if(!s||!s.maps||!s.meta) throw new Error('bad'); if(!s.id) s.id=uid('s'); open(s); }catch(err){ notify('That file is not a Human Error Analysis Studio study (.hea.json)'); } }; r.readAsText(f); e.target.value=''; };
   return html`<div class="wrap" style="max-width:1100px;margin:0 auto;width:100%">
-    <div class="page-head"><div><div class="eyebrow">risk2safe · Safety Critical Task Analysis</div><h2 style="font-size:30px">SHERPA Studio</h2>
+    <div class="page-head"><div><div class="eyebrow">risk2safe · Safety Critical Task Analysis</div><h2 style="font-size:30px">Human Error Analysis Studio</h2>
       <p>Map how a task is really done, predict how each step could fail, rate the conditions that make failure likely, and agree the controls that make the right action easy. Exports to Word and Excel at every stage.</p></div></div>
     <div class="grid3" style="margin-bottom:22px">
       <div class="card"><h3>New study</h3><p class="muted small" style="margin:0">Start from a blank task map, or paste your procedure in stage 2.</p><div><button class="btn primary" onClick=${()=>open(newStudy())}>Start blank study</button></div></div>
-      <div class="card"><h3>Example: road tanker offloading</h3><p class="muted small" style="margin:0">The webinar demo: 34-step procedure, work-as-done map, error modes, PIF ratings and a lighting improvement.</p><div><button class="btn" onClick=${()=>open(buildTanker())}>Open example</button></div></div>
+      <div class="card"><h3>Example: road tanker offloading</h3><p class="muted small" style="margin:0">A worked study: 34-step procedure, work-as-done map, error modes, PIF ratings and a lighting improvement.</p><div><button class="btn" onClick=${()=>open(buildTanker())}>Open example</button></div></div>
       <div class="card"><h3>Example: console design review</h3><p class="muted small" style="margin:0">Design and verification requirements for checking status lights across three consoles.</p><div class="row"><button class="btn" onClick=${()=>open(buildConsole())}>Open example</button><button class="btn ghost" onClick=${()=>fileRef.current.click()}>Open study file…</button><input ref=${fileRef} type="file" accept=".json,application/json" hidden onChange=${onFile}/></div></div>
     </div>
     <div class="panel"><div class="panel-h"><h3>Studies in this browser</h3><span class="small faint">Kept in this browser only. Use "Save study file" to keep a copy elsewhere.</span></div>
@@ -1009,7 +1009,7 @@ function Errors({st,update,ask,notify,ui,setUi}){
   const setA=(id,k,v)=>update(s=>{ const a=s.analyses.find(x=>x.id===id); if(a) a[k]=v; });
   const suggest=async()=>{ if(!sample||!n) return; setBusy(true); setSugg(null);
     try{ const parent=wad.nodes[n.parent]; const modes=ERROR_MODES.filter(m=>!n.activity||m.a===n.activity);
-      const prompt=`You are a human factors specialist running a SHERPA (Systematic Human Error Reduction and Prediction Approach) analysis.\nTask goal: ${wad.nodes[wad.rootId].label}\nParent task: ${parent?.label||''}\nStep ${nums[n.id]}: ${n.label}\nPerformed by: ${agentNames(st,n.agents)||'unknown'}\nActivity type: ${n.activity||'not set'}\nWarnings/comments: ${n.warnings||''} ${n.comments||''}\nChoose the credible error modes for this step ONLY from this list (code: name): ${modes.map(m=>m.code+': '+m.name).join('; ')}.\nReturn JSON {"modes":[{"code":"...","errorDesc":"short description of the error in plain words","consequence":"what could happen","errorType":"Slip|Lapse|Mistake|Non-compliance"}]} with at most 4 entries, most credible first.`;
+      const prompt=`You are a human factors specialist running a task-based human error analysis (hierarchical task analysis, error modes, performance influencing factors).\nTask goal: ${wad.nodes[wad.rootId].label}\nParent task: ${parent?.label||''}\nStep ${nums[n.id]}: ${n.label}\nPerformed by: ${agentNames(st,n.agents)||'unknown'}\nActivity type: ${n.activity||'not set'}\nWarnings/comments: ${n.warnings||''} ${n.comments||''}\nChoose the credible error modes for this step ONLY from this list (code: name): ${modes.map(m=>m.code+': '+m.name).join('; ')}.\nReturn JSON {"modes":[{"code":"...","errorDesc":"short description of the error in plain words","consequence":"what could happen","errorType":"Slip|Lapse|Mistake|Non-compliance"}]} with at most 4 entries, most credible first.`;
       const r=await sample.json(prompt,{modelTier:'default'}); const list=(r&&r.modes||[]).filter(x=>modeOf(x.code)); setSugg(list); if(!list.length) notify('No suggestions came back'); }
     catch(e){ notify(e&&e.code==='not_granted'?'AI suggestions were not allowed in this view':'AI suggestions are not available right now'); }
     setBusy(false); };
@@ -1107,7 +1107,7 @@ function Controls({st,update,notify,ui,setUi}){
   if(!a) return html`<div style="display:flex;flex-direction:column;gap:14px">${kpis}<div class="panel"><div class="empty">No PIFs are rated 75 or 100 yet, so there is nothing flagged for improvement. Rate PIFs in stage 6.</div></div></div>`;
   const n=st.maps.wad.nodes[a.nodeId]; const fl=flaggedPifs(a); const p=priorityOf(a,n,mode);
   const suggest=async()=>{ if(!sample) return; setBusy(true); setSugg(null);
-    try{ const prompt=`You are a human factors specialist recommending controls in a SHERPA study (high-hazard industry).\nTask: ${st.maps.wad.nodes[st.maps.wad.rootId].label}\nStep ${nums[n.id]}: ${n.label}\nError mode ${a.mode} ${modeOf(a.mode)?.name}: ${a.errorDesc}\nConsequence: ${a.consequence}\nExisting controls: ${a.controls||'none recorded'}\nPIFs rated worse than industry norm: ${fl.map(q=>`[${q.id}] ${q.name}: "${q.statement}" rated ${q.baseline}/100 because ${q.reason||'n/a'}`).join('; ')}\nPropose up to 5 specific, practical improvements that make correct performance easier, strongest control type first. Control level must be one of ${CONTROL_LEVELS.map(l=>l.k+'='+l.name).join(', ')}.\nReturn JSON {"improvements":[{"text":"...","level":"ENG","pifId":"<id in brackets above>"}]}.`;
+    try{ const prompt=`You are a human factors specialist recommending controls in a task-based human error analysis (high-hazard industry).\nTask: ${st.maps.wad.nodes[st.maps.wad.rootId].label}\nStep ${nums[n.id]}: ${n.label}\nError mode ${a.mode} ${modeOf(a.mode)?.name}: ${a.errorDesc}\nConsequence: ${a.consequence}\nExisting controls: ${a.controls||'none recorded'}\nPIFs rated worse than industry norm: ${fl.map(q=>`[${q.id}] ${q.name}: "${q.statement}" rated ${q.baseline}/100 because ${q.reason||'n/a'}`).join('; ')}\nPropose up to 5 specific, practical improvements that make correct performance easier, strongest control type first. Control level must be one of ${CONTROL_LEVELS.map(l=>l.k+'='+l.name).join(', ')}.\nReturn JSON {"improvements":[{"text":"...","level":"ENG","pifId":"<id in brackets above>"}]}.`;
       const r=await sample.json(prompt,{modelTier:'default'}); const out=(r&&r.improvements||[]).filter(x=>x.text&&LEVEL[x.level]); setSugg(out); if(!out.length) notify('No suggestions came back'); }
     catch(e){ notify(e&&e.code==='not_granted'?'AI suggestions were not allowed in this view':'AI suggestions are not available right now'); }
     setBusy(false); };
@@ -1212,15 +1212,15 @@ async function buildProcedureDocx(st,opt){
       const desc='   '.repeat(r.depth)+r.label;
       let wi=0; const W=()=>widths[wi++]; rows.push([...(opt.steps?[cell(r.num,{fill,w:W()})]:[]),cell(desc,{fill,w:W(),bold:r.depth===0&&s.rows.some(x=>x.depth>0)}),...(opt.role?[cell(r.abbr||r.role,{fill,w:W()})]:[]),cell('☐',{fill,w:W()}),cell(comParas,{fill,w:W()})]); }
     ch.push(table(heads,rows,widths)); }
-  const doc=new D.Document({creator:'SHERPA Studio',title:m.title,styles:{default:{document:{run:{font:'Calibri',size:20}}}},sections:[{children:ch}]});
+  const doc=new D.Document({creator:'Human Error Analysis Studio',title:m.title,styles:{default:{document:{run:{font:'Calibri',size:20}}}},sections:[{children:ch}]});
   return D.Packer.toBlob(doc);
 }
 async function buildReportDocx(st){
   const D=await loadDocx(); const {P,cell,table}=docxKit(D,13900); const wad=st.maps.wad; const nums=numbering(wad); const mode=st.meta.ratingMode; const ch=[]; const H=t=>P(t,{h:D.HeadingLevel.HEADING_1}); const H2=t=>P(t,{h:D.HeadingLevel.HEADING_2});
-  ch.push(P(st.meta.title,{h:D.HeadingLevel.TITLE})); ch.push(P('SHERPA analysis report · '+st.meta.studyType+' · Revision '+st.meta.revision+' · '+st.meta.date,{it:true}));
-  if(st.meta.isExample) ch.push(P('Example study: values come from a webinar demonstration and illustrative entries. Not for operational use.',{bold:true,color:'9B1C10'}));
+  ch.push(P(st.meta.title,{h:D.HeadingLevel.TITLE})); ch.push(P('Human error analysis report · '+st.meta.studyType+' · Revision '+st.meta.revision+' · '+st.meta.date,{it:true}));
+  if(st.meta.isExample) ch.push(P('Example study: values are illustrative. Not for operational use.',{bold:true,color:'9B1C10'}));
   ch.push(H('1  Study details')); ch.push(table(['Item','Detail'],[['Task goal',st.meta.goal],['Site / facility',[st.meta.site,st.meta.facility].filter(Boolean).join(' · ')],['Study lead',st.meta.owner],['Team',st.meta.team],['Work as done described by',st.meta.interviewees],['Preconditions',st.meta.preconditions],['Notes',st.meta.notes]],[25,75]));
-  ch.push(H('2  Method')); ch.push(P('The study followed the Systematic Human Error Reduction and Prediction Approach (SHERPA): (1) map the task as it is actually done and compare it with the procedure; (2) screen each step for risk and predict credible error modes for Medium and High steps; (3) rate the performance influencing factors (PIFs) for each credible error mode on a five-point scale, 0 best case to 100 worst case, 50 industry norm; (4) agree improvements for PIFs rated 75 or 100, strongest control type first. The error-mode score is the '+(mode==='enhanced'?'weighted':'')+' mean of its PIF ratings and is used to rank actions, not as a probability.'));
+  ch.push(H('2  Method')); ch.push(P('The study followed a task-based human error analysis: (1) map the task as it is actually done and compare it with the procedure; (2) screen each step for risk and predict credible error modes for Medium and High steps; (3) rate the performance influencing factors (PIFs) for each credible error mode on a five-point scale, 0 best case to 100 worst case, 50 industry norm; (4) agree improvements for PIFs rated 75 or 100, strongest control type first. The error-mode score is the '+(mode==='enhanced'?'weighted':'')+' mean of its PIF ratings and is used to rank actions, not as a probability.'));
   ch.push(H('3  Task map (work as done)')); ordered(wad).forEach(({n,d})=>{ ch.push(P(`${'    '.repeat(d)}${nums[n.id]}  ${n.label}${n.agents.length?'   [A/P: '+agentLabel(st,n.agents)+']':''}${n.ref?'   (procedure '+n.ref+')':''}`,{after:10,bold:d===0})); if(n.children.length) ch.push(P(`${'    '.repeat(d+1)}Plan ${nums[n.id]}: ${n.plan.type==='cond'?n.plan.text:PLAN_TYPES.find(p=>p.v===n.plan.type)?.l}`,{it:true,after:10,size:18})); });
   const cmp=compareMaps(st); ch.push(H('4  Work as imagined vs work as done'));
   ch.push(cmp.length?table(['Difference','Procedure step','Work as done','Why','Decision'],cmp.map(r=>{ const g=st.gaps[r.key]||{}; return [r.kind,r.wai?`${r.wai.ref||r.waiNum} ${r.wai.label}`:'—',r.wad?`${r.wadNum} ${r.wad.label}`:'—',[g.reason,g.note].filter(Boolean).join(': '),g.decision||'Not decided']; }),[12,28,28,16,16]):P('No work-as-imagined map was compared, or no differences were found.'));
@@ -1239,12 +1239,12 @@ async function buildReportDocx(st){
   ch.push(cr.length?table(['Step','Description','Critical deviation','Knowledge, skills and experience','Ref. doc'],cr.map(r=>[r.num,r.n.label,r.c.criticalDeviation,['Knowledge: '+(r.c.knowledge||''),'Skill: '+(r.c.skills||''),'Experience: '+(r.c.experience||'')].join('\n'),r.c.refDoc]),[7,22,24,37,10]):P('No competence requirements written yet.'));
   ch.push(H('Traceability')); cl.forEach(a=>(a.improvements||[]).filter(i=>i.status!=='Rejected').forEach(i=>{ const ps=(i.pifIds||[]).map(id=>a.pifs.find(p=>p.id===id)).filter(Boolean); ch.push(P(`Step ${nums[a.nodeId]} → ${a.mode} ${modeOf(a.mode)?.name||''} → ${ps.map(p=>`${p.name} (${p.baseline}${p.modified!=null?'→'+p.modified:''})`).join(', ')||'no PIF linked'} → [${LEVEL[i.level]?.name}] ${i.text}`,{size:18,after:30})); }));
   const g=gates(st); const open=Object.entries(g).filter(([k,v])=>v.length); if(open.length){ ch.push(H('Open items at time of export')); open.forEach(([k,v])=>{ ch.push(P(STAGES.find(s=>s.k===k)?.l+(st.gateNotes[k]?` — proceeded: ${st.gateNotes[k]}`:''),{bold:true,after:20})); v.forEach(x=>ch.push(P('• '+x,{size:18,after:10}))); }); }
-  const doc=new D.Document({creator:'SHERPA Studio',title:st.meta.title,styles:{default:{document:{run:{font:'Calibri',size:20}}}},sections:[{properties:{page:{size:{orientation:D.PageOrientation.LANDSCAPE}}},children:ch}]});
+  const doc=new D.Document({creator:'Human Error Analysis Studio',title:st.meta.title,styles:{default:{document:{run:{font:'Calibri',size:20}}}},sections:[{properties:{page:{size:{orientation:D.PageOrientation.LANDSCAPE}}},children:ch}]});
   return D.Packer.toBlob(doc);
 }
 async function buildCompetenceDocx(st){
   const D=await loadDocx(); const {P,table}=docxKit(D,13900); const rows=competenceRows(st);
-  const doc=new D.Document({creator:'SHERPA Studio',sections:[{properties:{page:{size:{orientation:D.PageOrientation.LANDSCAPE}}},children:[P('Sustained competence: '+(st.meta.goal||st.meta.title),{h:D.HeadingLevel.TITLE}),P('Critical steps and the knowledge, skills and experience needed to perform them correctly.',{it:true}),
+  const doc=new D.Document({creator:'Human Error Analysis Studio',sections:[{properties:{page:{size:{orientation:D.PageOrientation.LANDSCAPE}}},children:[P('Sustained competence: '+(st.meta.goal||st.meta.title),{h:D.HeadingLevel.TITLE}),P('Critical steps and the knowledge, skills and experience needed to perform them correctly.',{it:true}),
     table(['Step','Description','Critical deviation','Competence requirements (knowledge, skills and experience)','Ref. doc'],rows.map(r=>[r.num,r.n.label,r.c.criticalDeviation||'',['Knowledge: '+(r.c.knowledge||''),'Skill: '+(r.c.skills||''),'Experience: '+(r.c.experience||'')].join('\n'),r.c.refDoc||'']),[7,22,25,36,10])]}]});
   return D.Packer.toBlob(doc);
 }
@@ -1299,11 +1299,11 @@ function Outputs({st,update,notify,ui,setUi}){
       ${!comp.length?html`<div class="panel"><div class="empty">No critical or High-risk steps yet. Mark them in stage 4.</div></div>`:html`<div><button class="btn primary" disabled=${!!busy} onClick=${()=>run('comp',async()=>{ await saveFile(base+'_competence.docx',await buildCompetenceDocx(st),notify); })}>${busy==='comp'?'Building…':'Download competence sheet (.docx)'}</button></div>`}
     </div>`:null}
     ${tab==='downloads'?html`<div class="grid2">
-      ${[['report','Full SHERPA report','Word, landscape: study details, method, task map, differences, screening, error analysis, PIFs, action list, design requirements, competence, traceability and open items.','Download .docx',async()=>saveFile(base+'_SHERPA_report.docx',await buildReportDocx(st),notify)],
-         ['xlsx','Analysis workbook','Excel with one sheet each for study, task map, procedure, differences, risk assessment grid, PIF ratings, action list and competence. Filters on every sheet.','Download .xlsx',async()=>saveFile(base+'_SHERPA.xlsx',await buildXlsx(st),notify)],
+      ${[['report','Full analysis report','Word, landscape: study details, method, task map, differences, screening, error analysis, PIFs, action list, design requirements, competence, traceability and open items.','Download .docx',async()=>saveFile(base+'_HEA_report.docx',await buildReportDocx(st),notify)],
+         ['xlsx','Analysis workbook','Excel with one sheet each for study, task map, procedure, differences, risk assessment grid, PIF ratings, action list and competence. Filters on every sheet.','Download .xlsx',async()=>saveFile(base+'_HEA.xlsx',await buildXlsx(st),notify)],
          ['csv','Action list','Every improvement with priority, owner, due date and status, for your action tracker.','Download .csv',async()=>saveFile(base+'_actions.csv',toCSV(actionRows(st)),notify)],
          ['svg','Task map picture','The work-as-done map as a vector drawing, for reports and slides.','Download .svg',async()=>saveFile(base+'_task_map.svg',diagramSVG(st,st.maps.wad,{colorBy:'agent',forExport:true}),notify)],
-         ['json','Study file','The whole study, to reopen later, share with a colleague or keep under version control.','Save .sherpa.json',async()=>saveFile(base+'.sherpa.json',JSON.stringify(st,null,1),notify)]].map(([k,t,d,b,fn])=>html`<div class="card" key=${k}><h3>${t}</h3><p class="small muted" style="margin:0">${d}</p><div><button class="btn primary" disabled=${!!busy} onClick=${()=>run(k,fn)}>${busy===k?'Building…':b}</button></div></div>`)}
+         ['json','Study file','The whole study, to reopen later, share with a colleague or keep under version control.','Save .hea.json',async()=>saveFile(base+'.hea.json',JSON.stringify(st,null,1),notify)]].map(([k,t,d,b,fn])=>html`<div class="card" key=${k}><h3>${t}</h3><p class="small muted" style="margin:0">${d}</p><div><button class="btn primary" disabled=${!!busy} onClick=${()=>run(k,fn)}>${busy===k?'Building…':b}</button></div></div>`)}
     </div>`:null}
   </div>`;
 }
@@ -1353,20 +1353,20 @@ function App(){
   const g=useMemo(()=>study?gates(study):{},[study]);
   const go=k=>{ setStage(k); window.scrollTo(0,0); };
   const ask=m=>setModal(m);
-  const saveJson=()=>saveFile(safeName(study.meta.title)+'.sherpa.json',JSON.stringify(study,null,1),notify);
-  if(!study) return html`<${React.Fragment}><header class="bar"><div class="wrap bar-in"><div class="brand">SHERPA Studio <small>risk2safe</small></div><span class="grow"></span><button class="btn ghost" onClick=${()=>setGloss(true)}>Glossary</button></div></header>
+  const saveJson=()=>saveFile(safeName(study.meta.title)+'.hea.json',JSON.stringify(study,null,1),notify);
+  if(!study) return html`<${React.Fragment}><header class="bar"><div class="wrap bar-in"><div class="brand">HEA Studio <small>risk2safe</small></div><span class="grow"></span><button class="btn ghost" onClick=${()=>setGloss(true)}>Glossary</button></div></header>
     <main><${Home} open=${open} notify=${notify} ask=${ask}/></main>${gloss?html`<${Glossary} close=${()=>setGloss(false)}/>`:null}<${Modal} m=${modal} close=${()=>setModal(null)}/>${toast?html`<div class="toast" role="status">${toast}</div>`:null}<//>`;
   const idx=STAGES.findIndex(s=>s.k===stage); const next=STAGES[idx+1]?.k; const info=STAGE_INFO[stage];
   const props={st:study,update,ask,notify,ui,setUi,go};
   return html`<${React.Fragment}>
-    <header class="bar"><div class="wrap bar-in"><div class="brand">SHERPA Studio <small>risk2safe</small></div>
+    <header class="bar"><div class="wrap bar-in"><div class="brand">HEA Studio <small>risk2safe</small></div>
       <div class="study-name"><button class="btn sm ghost" onClick=${()=>{ saveStudyLS(study); setStudy(null); }}>← All studies</button><span title=${study.meta.title}>${study.meta.title}</span>${study.meta.isExample?html`<span class="pill sig">example</span>`:null}</div>
       <span class="save-state hide-sm">${saved}</span>
       <div class="bar-actions"><button class="btn sm" onClick=${saveJson}>Save study file</button><button class="btn sm ghost" onClick=${()=>setGloss(true)}>Glossary</button></div></div></header>
-    <nav class="rail" aria-label="SHERPA stages"><div class="wrap rail-in">${STAGES.map(s=>{ const iss=g[s.k]; const ok=iss&&!iss.length; const dot=(s.k==='outputs'||s.k==='grid')?'':ok?'ok':'warn';
+    <nav class="rail" aria-label="Analysis stages"><div class="wrap rail-in">${STAGES.map(s=>{ const iss=g[s.k]; const ok=iss&&!iss.length; const dot=(s.k==='outputs'||s.k==='grid')?'':ok?'ok':'warn';
       return html`<button key=${s.k} class="stage" aria-current=${stage===s.k?'step':undefined} onClick=${()=>go(s.k)}><span class="num">${s.n}</span><span class="lbl">${s.l}</span>${dot?html`<span class=${'dot '+dot} title=${ok?'Complete':(iss.length+' open item(s)')}></span>`:null}</button>`; })}</div></nav>
     <main><div class="wrap" style="display:flex;flex-direction:column;gap:14px">
-      ${study.meta.isExample&&stage==='setup'?html`<div class="notice small">This is an example study built from the HRA "Watch SHERPA in Action" webinar demo. Entries marked "example" were added to show the workflow. Replace them with your own data before using any output.</div>`:null}
+      ${study.meta.isExample&&stage==='setup'?html`<div class="notice small">This is an example study. Its entries are illustrative and show the workflow. Replace them with your own data before using any output.</div>`:null}
       <div class="page-head"><div><div class="eyebrow">Stage ${STAGES[idx].n} of ${STAGES.length}</div><h2>${info[0]}</h2><p>${info[1]}</p></div></div>
       ${stage==='setup'?html`<${Setup} ...${props}/>`:null}
       ${stage==='map'?html`<${MapStage} ...${props}/>`:null}
@@ -1384,7 +1384,7 @@ function App(){
 function Glossary({close}){
   useEffect(()=>{ const k=e=>{ if(e.key==='Escape') close(); }; window.addEventListener('keydown',k); return ()=>window.removeEventListener('keydown',k); },[]);
   return html`<div class="scrim" onClick=${e=>{if(e.target===e.currentTarget) close();}}><aside class="drawer" role="dialog" aria-label="Glossary"><div class="row" style="justify-content:space-between"><h2>Glossary</h2><button class="btn" onClick=${close}>Close</button></div>
-    <p class="small muted" style="margin:0">Terms from the SHERPA method, as used in this studio.</p>
+    <p class="small muted" style="margin:0">Terms used in this studio.</p>
     <dl class="gloss">${GLOSSARY.map(([t,d])=>html`<div key=${t}><dt>${t}</dt><dd>${d}</dd></div>`)}</dl>
     <div><h3 style="margin-bottom:6px">Rating scale</h3>${RATING.map(r=>html`<div key=${r.v} class="row small"><span class="code" style="min-width:36px;text-align:center">${r.v}</span>${r.l} — ${r.h}</div>`)}</div>
     <div><h3 style="margin-bottom:6px">Priority bands</h3><div class="small muted">P1: High step with error-mode score 60 or more. P2: High step with a lower score, or Medium step with 60 or more. P3: everything else.</div></div>
